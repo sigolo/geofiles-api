@@ -1,0 +1,25 @@
+version: "3.7"
+
+services:
+  web:
+    container_name: api
+    build: ./src
+    command: uvicorn app.main:app --reload --workers 1 --host 0.0.0.0 --port 8000
+    volumes:
+      - ./src/:/usr/src/app/
+    ports:
+      - 8006:8000
+    environment:
+      - DATABASE_URL=postgresql://postgres:secret@db/gis_users
+  db:
+    image: postgres:12.1-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=gis_users
+    ports:
+      - 5436:5432
+volumes:
+  postgres_data:
