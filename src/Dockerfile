@@ -56,7 +56,7 @@ COPY ./requirements.txt /usr/src/app/requirements.txt
 # install dependencies
 RUN set -eux \
     && apk add --no-cache --virtual .build-deps build-base \
-        py3-pip libressl-dev libffi-dev gcc musl-dev python3-dev \
+        py3-pip libressl-dev libffi-dev gcc musl-dev python3-dev postgresql-dev\
     && pip3 install --upgrade pip setuptools wheel \
     && pip3 install -r /usr/src/app/requirements.txt \
     && rm -rf /root/.cache/pip
