@@ -1,8 +1,5 @@
 fastapi
 uvicorn
-asyncpg
-databases
-psycopg2
 passlib
 python-multipart==0.0.5
 
