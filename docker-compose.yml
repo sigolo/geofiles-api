@@ -4,14 +4,14 @@ services:
   web:
     container_name: geojson-convertor
     build: ./src
-    command: uvicorn app.main:app --reload --workers 1 --host 0.0.0.0 --port 8000
+    command: uvicorn app.main:app --reload --workers 1 --host 0.0.0.0 --port 8012
     volumes:
       - ./src/:/usr/src/app/
-    ports:
-      - 8012:8000
     environment:
-      - DATABASE_URL=postgresql://postgres:secret@db/uploads
+      - DATABASE_URL=postgresql://postgres:secret@localhost:5438/uploads
       - CREDENTIALS_URL=http://localhost:8000/auth/credentials
+      - FILE_EOL=1
+    network_mode: host
   db:
     image: postgres:12.1-alpine
     volumes:

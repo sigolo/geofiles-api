@@ -6,6 +6,7 @@ psycopg2
 passlib
 python-multipart==0.0.5
 httpx
+aiofiles
 geojson-pydantic
 # dev
 pytest

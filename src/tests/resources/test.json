@@ -1,1 +1,18 @@
-{}
+{
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "geometry": {
+          "coordinates": [
+            17,18
+          ],
+          "type": "Point"
+        },
+        "properties": {},
+        "id": 1,
+        "bbox": null
+      }
+    ],
+    "bbox": null
+}
