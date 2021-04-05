@@ -4,15 +4,14 @@ from pathlib import Path
 from geojson_pydantic.features import FeatureCollection
 from pydantic import ValidationError
 from ..utils.Exceptions import raise_422_exception
+from zipfile import ZipFile
 
 
 def validate_file(path, extension):
-    if Validator.SUPPORTED_FORMAT[extension] == SupportedFormat.GEOJSON:
-        validator = Validator(path, extension)
-        if not validator.validate():
-            raise_422_exception()
-        return True
-    print("WARNING: validator not implemented yet")
+    validator = Validator(path, extension)
+    if not validator.validate():
+        raise_422_exception()
+        return False
     return True
 
 
@@ -31,8 +30,10 @@ class SupportedFormat:
 
 
 class Validator:
-    SUPPORTED_FORMAT = {".shp": SupportedFormat.SHP, ".dwg": SupportedFormat.DWG, ".json": SupportedFormat.GEOJSON,
+    SUPPORTED_FORMAT = {".zip": SupportedFormat.SHP, ".dwg": SupportedFormat.DWG, ".json": SupportedFormat.GEOJSON,
                         ".csv": SupportedFormat.CSV}
+
+    SHAPE_FILE_MANDATORY = [".dbf", ".shp", ".shx"]
 
     def __init__(self, file_path: str, file_type: str):
         self.file_path = Path(file_path)
@@ -40,7 +41,7 @@ class Validator:
 
     def validate(self) -> bool:
         if self.file_type == SupportedFormat.SHP:
-            raise NotImplementedError("SHP Validator Not implemented")
+            return self.validate_shapefile()
         if self.file_type == SupportedFormat.CSV:
             raise NotImplementedError("CSV Validator Not implemented")
         if self.file_type == SupportedFormat.DWG:
@@ -62,4 +63,17 @@ class Validator:
                     print(e)
                     return False
         except ValueError as err:
+            return False
+
+    def validate_shapefile(self):
+        with ZipFile(self.file_path, 'r') as zipObject:
+            list_of_file_names = zipObject.namelist()
+            contained_files = []
+            for file in list_of_file_names:
+                file_name, file_ext = os.path.splitext(file)
+                if file_ext in self.SHAPE_FILE_MANDATORY:
+                    contained_files.append(file_ext)
+            contained_files.sort()
+            if contained_files == self.SHAPE_FILE_MANDATORY:
+                return True
             return False

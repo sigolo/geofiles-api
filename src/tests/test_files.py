@@ -111,6 +111,8 @@ def test_retrieve_download_format(test_app: TestClient, monkeypatch, file_uuid, 
     monkeypatch.setattr(token, "check_user_credentials", mock_check_credentials)
     monkeypatch.setattr(files_repository, "get_one", mock_get_one)
     response = test_app.get(f"/files/{file_uuid}/format")
+    expected_download_types = [f"/files/{file_uuid}/to{export_format}" for export_format in expected_download_types]
     assert response.status_code == expected_status_code
     assert response.json() == expected_download_types
+
 
