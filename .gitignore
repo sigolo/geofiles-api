@@ -22,6 +22,7 @@ docs.zip
 archive.zip
 uploads
 *.zip
+*.json
 # vim temporary files
 *~
 .*.sw?

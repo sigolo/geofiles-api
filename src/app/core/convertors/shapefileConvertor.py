@@ -1,17 +1,12 @@
-import json
 import os
-
-import shapefile
 from ..convertors.Convertor import Convertor
 from zipfile import ZipFile
 from pathlib import Path
-from bs4 import UnicodeDammit
 import subprocess
+import shutil
 
 
 class ShapeFileConvertor(Convertor):
-
-
 
     def __init__(self, path):
         self.path = path
@@ -23,21 +18,24 @@ class ShapeFileConvertor(Convertor):
         pass
 
     def to_geojson(self):
-        TMP_FILE= "app/uploads/temp.json"
+        source_dir, file_ext = os.path.splitext(self.path)
+        json_tmp = os.path.join(source_dir, "temp.json")
         try:
-            filename, file_ext = os.path.splitext(self.path)
             with ZipFile(self.path, "r") as zip_ref:
-                zip_ref.extractall(filename)
-            for file in os.listdir(filename):
+                zip_ref.extractall(source_dir)
+            for file in os.listdir(source_dir):
                 if file.endswith(".shp"):
-                    shape_file_path = os.path.join(filename, file)
-                    return_code = subprocess.call(["ogr2ogr", "-f", "GeoJSON", TMP_FILE, shape_file_path])
+                    shape_file_path = os.path.join(source_dir, file)
+                    return_code = subprocess.call(["ogr2ogr", "-f", "GeoJSON", json_tmp, shape_file_path])
                     if return_code == 0:
-                        with open(TMP_FILE, 'r') as geojson:
+                        with open(json_tmp, 'r') as geojson:
                             return geojson.read()
         except Exception as e:
             print(e)
             return
+        finally:
+            if Path(source_dir).is_dir():
+                shutil.rmtree(source_dir)
 
     def to_csv(self):
         pass
