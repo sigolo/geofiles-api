@@ -8,7 +8,7 @@ import aiofiles
 import uuid
 import datetime
 from pathlib import Path
-from ..utils.validator import Validator, validate_file
+from ..core.validator import Validator, validate_file
 
 
 async def create(file: UploadFile, file_extension: str, user: TokenData):

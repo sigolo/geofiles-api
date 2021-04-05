@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from geojson_pydantic.features import FeatureCollection
 from pydantic import ValidationError
-from .Exceptions import raise_422_exception
+from ..utils.Exceptions import raise_422_exception
 
 
 def validate_file(path, extension):
@@ -16,14 +16,21 @@ def validate_file(path, extension):
     return True
 
 
-class SupportedFormat():
+class SupportedFormat:
     SHP = "SHP"
     DWG = "DWG"
     GEOJSON = "GEOJSON"
     CSV = "CSV"
 
+    @classmethod
+    def get_available_format(cls, input_format: str):
+        all_format = [SupportedFormat.SHP, SupportedFormat.DWG, SupportedFormat.GEOJSON, SupportedFormat.CSV]
+        all_format.remove(input_format)
+        all_format.sort()
+        return all_format
 
-class Validator():
+
+class Validator:
     SUPPORTED_FORMAT = {".shp": SupportedFormat.SHP, ".dwg": SupportedFormat.DWG, ".json": SupportedFormat.GEOJSON,
                         ".csv": SupportedFormat.CSV}
 
@@ -39,7 +46,6 @@ class Validator():
         if self.file_type == SupportedFormat.DWG:
             raise NotImplementedError("DWG Validator Not implemented")
         if self.file_type == SupportedFormat.GEOJSON:
-
             return self.validate_geojson()
 
     def validate_geojson(self):

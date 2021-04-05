@@ -21,6 +21,7 @@ venv
 docs.zip
 archive.zip
 uploads
+*.zip
 # vim temporary files
 *~
 .*.sw?

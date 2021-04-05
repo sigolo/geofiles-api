@@ -5,7 +5,8 @@ from starlette.testclient import TestClient
 from pathlib import Path
 
 from ..app.api.schemas import TokenData
-from ..app.utils import token, validator, Exceptions
+from ..app.utils import token, Exceptions
+from ..app.core import validator
 from ..app.db import files as files_repository
 
 import uuid
@@ -67,7 +68,7 @@ def test_download_file(test_app: TestClient, monkeypatch, file_uuid, file_record
     async def mock_check_credentials(token_string: str):
         return token_data
 
-    async def mock_get_one(file_uuid:str):
+    async def mock_get_one(file_uuid: str):
         return file_record
 
     test_app.headers["access-token"] = access_token
@@ -76,4 +77,40 @@ def test_download_file(test_app: TestClient, monkeypatch, file_uuid, file_record
     response = test_app.get(f"/files/{file_uuid}")
     assert response.status_code == expected_status_code
 
+
+@pytest.mark.parametrize(
+    "file_uuid, file_record,  expected_download_types, access_token,token_data, expected_status_code",
+    [
+        ["some_valid_uuid",
+         {"user_id": 1, "path": os.path.join('tests/resources', JSON_VALID_FILE), "file_name": JSON_VALID_FILE,
+          "type": "GEOJSON"}, ['CSV', 'DWG', 'SHP'],
+         "some-valid-token", {"username": "john", "user_id": 1}, status.HTTP_200_OK],
+        ["some_valid_uuid",
+         {"user_id": 1, "path": os.path.join('tests/resources', JSON_VALID_FILE), "file_name": JSON_VALID_FILE,
+          "type": "SHP"}, ['CSV', 'DWG', 'GEOJSON'],
+         "some-valid-token", {"username": "john", "user_id": 1}, status.HTTP_200_OK],
+        ["some_valid_uuid",
+         {"user_id": 1, "path": os.path.join('tests/resources', JSON_VALID_FILE), "file_name": JSON_VALID_FILE,
+          "type": "DWG"}, ['CSV', 'GEOJSON', 'SHP'],
+         "some-valid-token", {"username": "john", "user_id": 1}, status.HTTP_200_OK],
+        ["some_valid_uuid",
+         {"user_id": 1, "path": os.path.join('tests/resources', JSON_VALID_FILE), "file_name": JSON_VALID_FILE,
+          "type": "CSV"}, ['DWG', 'GEOJSON', 'SHP'],
+         "some-valid-token", {"username": "john", "user_id": 1}, status.HTTP_200_OK],
+    ]
+)
+def test_retrieve_download_format(test_app: TestClient, monkeypatch, file_uuid, file_record, expected_download_types, access_token, token_data,
+                                  expected_status_code: int):
+    async def mock_check_credentials(token_string: str):
+        return token_data
+
+    async def mock_get_one(file_uuid: str):
+        return file_record
+
+    test_app.headers["access-token"] = access_token
+    monkeypatch.setattr(token, "check_user_credentials", mock_check_credentials)
+    monkeypatch.setattr(files_repository, "get_one", mock_get_one)
+    response = test_app.get(f"/files/{file_uuid}/format")
+    assert response.status_code == expected_status_code
+    assert response.json() == expected_download_types
 
