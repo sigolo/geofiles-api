@@ -11,7 +11,7 @@ def raise_401_exception(msg: Optional[str] = "Incorrect Credentials"):
     )
 
 
-def raise_404_exception(msg: Optional[str] = "Requested resource does not exist"):
+def raise_404_exception(msg: Optional[str] = "Requested resource does not exist or has expired"):
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail=msg,

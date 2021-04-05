@@ -11,7 +11,6 @@ from pathlib import Path
 from ..utils.validator import Validator, validate_file
 
 
-
 async def create(file: UploadFile, file_extension: str, user: TokenData):
     # Write the file
     file_uuid = uuid.uuid4()
@@ -27,7 +26,9 @@ async def create(file: UploadFile, file_extension: str, user: TokenData):
 
         query = UploadTable.insert().values(id=file_uuid, type=Validator.SUPPORTED_FORMAT[file_extension],
                                             user_id=user["user_id"],
-                                            path=upload_path, eol=eol)
+                                            path=upload_path,
+                                            file_name=file.filename,
+                                            eol=eol)
         await database.execute(query=query)
         await refresh_expired()
         return file_uuid
@@ -35,18 +36,25 @@ async def create(file: UploadFile, file_extension: str, user: TokenData):
     return False
 
 
+async def get_one(file_uuid: str):
+    await refresh_expired()
+    query = UploadTable.select().where(UploadTable.c.id == file_uuid)
+    return await database.fetch_one(query=query)
+
+
 async def refresh_expired():
     query = UploadTable.select().where(UploadTable.c.eol < datetime.datetime.now())
     expired_files = await database.fetch_all(query=query)
     for f in expired_files:
         file_path = Path(f.get("path"))
-        if not file_path.exists():
-            print("file not found")
-        file_path.unlink()
-        await delete(f.get("id"))
+        try:
+            file_path.unlink()
+        except FileNotFoundError as e:
+            print(e)
+        finally:
+            await delete(f.get("id"))
 
 
 async def delete(file_uid: str):
     query = UploadTable.delete().where(UploadTable.c.id == file_uid)
     return await database.execute(query=query)
-

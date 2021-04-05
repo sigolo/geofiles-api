@@ -10,6 +10,7 @@ Files = Table(
     metadata,
     Column("id", UUID, primary_key=True, default=uuid.uuid4()),
     Column("user_id", Integer),
+    Column("file_name", String),
     Column("type", Enum("SHP", "DWG", "CSV", "GEOJSON", create_type=False, name="allowed_format")),
     Column("path", String(255)),
     Column("eol", DateTime, default=func.now())

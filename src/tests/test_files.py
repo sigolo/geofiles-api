@@ -1,4 +1,5 @@
 import pytest
+import os
 from fastapi import status, UploadFile
 from starlette.testclient import TestClient
 from pathlib import Path
@@ -26,12 +27,12 @@ NOT_SUPPORTED_FILE = "test.png"
     ]
 )
 def test_upload_file(test_app: TestClient, monkeypatch, path_to_file: str, access_token: str, token_data,
-                        expected_status_code: int):
+                     expected_status_code: int):
     path_to_file = Path('tests/resources', path_to_file)
     assert path_to_file.exists()
     files_payload = {'file': path_to_file.open('rb')}
 
-    async def mock_check_credentials(token: str):
+    async def mock_check_credentials(token_string: str):
         return token_data
 
     async def mock_create(file: UploadFile, file_extension: str, user: TokenData):
@@ -44,3 +45,35 @@ def test_upload_file(test_app: TestClient, monkeypatch, path_to_file: str, acces
     monkeypatch.setattr(files_repository, "create", mock_create)
     response = test_app.post('/files/upload/', files=files_payload)
     assert response.status_code == expected_status_code
+
+
+@pytest.mark.parametrize(
+    "file_uuid, file_record, access_token,token_data, expected_status_code",
+    [
+        ["some_valid_uuid",
+         {"user_id": 1, "path": os.path.join('tests/resources', JSON_VALID_FILE), "file_name": JSON_VALID_FILE},
+         "some-valid-token", {"username": "john", "user_id": 1}, status.HTTP_200_OK],
+        ["some_expired_uuid",
+         None,
+         "some-valid-token", {"username": "john", "user_id": 1}, status.HTTP_404_NOT_FOUND],
+        ["some_valid_uuid",
+         {"user_id": 1, "path": os.path.join('tests/resources', JSON_VALID_FILE), "file_name": JSON_VALID_FILE},
+         "some-valid-token-from-other-user", {"username": "not_john", "user_id": 2}, status.HTTP_401_UNAUTHORIZED],
+        [None, None, "some-valid-token", {"username": "john", "user_id": 1}, status.HTTP_404_NOT_FOUND],
+    ]
+)
+def test_download_file(test_app: TestClient, monkeypatch, file_uuid, file_record, access_token, token_data,
+                       expected_status_code: int):
+    async def mock_check_credentials(token_string: str):
+        return token_data
+
+    async def mock_get_one(file_uuid:str):
+        return file_record
+
+    test_app.headers["access-token"] = access_token
+    monkeypatch.setattr(token, "check_user_credentials", mock_check_credentials)
+    monkeypatch.setattr(files_repository, "get_one", mock_get_one)
+    response = test_app.get(f"/files/{file_uuid}")
+    assert response.status_code == expected_status_code
+
+
