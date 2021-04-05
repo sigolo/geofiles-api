@@ -11,5 +11,3 @@ geojson-pydantic
 # dev
 pytest
 requests
-pyshp
-bs4
