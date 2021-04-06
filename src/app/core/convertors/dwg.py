@@ -3,8 +3,6 @@ from ..convertors.Convertor import Convertor
 import json
 from pathlib import Path
 import subprocess
-import shutil
-
 
 class DwgConvertor(Convertor):
 
@@ -20,20 +18,31 @@ class DwgConvertor(Convertor):
     def to_geojson(self):
         json_tmp = os.path.join("app/uploads", "temp.json")
         try:
-            return_code = subprocess.call(["dwgread", "-f", self.path, "-O", "GeoJSON", "-o", json_tmp])
-            if return_code == 0 and Path(json_tmp).exists():
+            return_code = subprocess.call(["dwgread", self.path, "-O", "GeoJSON", "-o", json_tmp])
+            if not return_code == 0 or not Path(json_tmp).exists():
+                return False
+            try:
                 with open(json_tmp, 'r') as fp:
                     json_dict = json.loads(fp.read())
-                    if "features" in json_dict:
-                        json_dict["features"] = [feature for feature in json_dict["features"] if feature["geometry"] is not None]
-                    return json.dumps(json_dict)
+                    if "features" not in json_dict:
+                        print("invalid GeoJSON")
+                        return False
+                    try:
+                        json_dict["features"] = [feature for feature in json_dict["features"]
+                                                 if feature["geometry"] is not None]
+                        return json.dumps(json_dict)
+                    except KeyError as e:
+                        print(e)
+                        return False
+            except Exception as e:
+                print(e)
+                return False
         except Exception as e:
             print(e)
-            return
+            return False
         finally:
             if Path(json_tmp).exists():
-                print("ok")
-                # Path(json_tmp).unlink()
+                Path(json_tmp).unlink()
 
     def to_csv(self):
         pass

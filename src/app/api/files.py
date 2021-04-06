@@ -6,8 +6,7 @@ from ..db import files as files_repository
 from ..utils.Exceptions import raise_422_exception, raise_401_exception, raise_404_exception
 from ..utils import token
 from ..core.validator import Validator, SupportedFormat
-from ..core.convertors.shapefile import ShapeFileConvertor
-from ..core.convertors.dwg import DwgConvertor
+from ..core.convertors.helper_functions import convert_to_geojson as to_geojson
 from fastapi.responses import FileResponse
 from pathlib import Path
 from geojson_pydantic.features import FeatureCollection
@@ -66,11 +65,8 @@ async def get_allowed_formats(file_uuid: str, access_token: Optional[str] = Head
 async def convert_to_geojson(file_uuid: str, access_token: Optional[str] = Header(None)):
     file_record = await file_request_handler(file_uuid, access_token)
     file_type = file_record.get("type")
-    if file_type == SupportedFormat.SHP:
-        return FeatureCollection.parse_raw(ShapeFileConvertor(file_record.get("path")).to_geojson())
-    if file_type == SupportedFormat.GEOJSON:
-        with open(file_record.get("path")) as fp:
-            return FeatureCollection.parse_raw(fp.read())
-    if file_type == SupportedFormat.DWG:
-        return FeatureCollection.parse_raw(DwgConvertor(file_record.get("path")).to_geojson())
-
+    file_path = file_record.get("path")
+    geojson_response = to_geojson(file_type, file_path)
+    if not geojson_response:
+        raise_422_exception()
+    return FeatureCollection.parse_raw(geojson_response)

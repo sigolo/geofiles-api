@@ -69,7 +69,7 @@ class Validator:
     def validate_dwg(self):
         json_tmp = os.path.join("app/uploads", "temp.json")
         try:
-            return_code = subprocess.call(["dwgread", "-f", self.file_path, "-O", "GeoJSON", "-o", json_tmp])
+            return_code = subprocess.call(["dwgread", self.file_path, "-O", "GeoJSON", "-o", json_tmp])
             if return_code == 0 and Path(json_tmp).exists():
                 return True
         except Exception as e:
