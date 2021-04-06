@@ -39,7 +39,7 @@ RUN tarxz=`curl --silent 'https://ftp.gnu.org/gnu/libredwg/?C=M;O=D' | grep '.ta
 ############################
 
 # pull official base image
-FROM osgeo/gdal:alpine-normal-latest
+FROM osgeo/gdal:ubuntu-small-latest
 
 # set work directory
 WORKDIR /usr/src/app
@@ -55,8 +55,8 @@ COPY ./requirements.txt /usr/src/app/requirements.txt
 
 # install dependencies
 RUN set -eux \
-    && apk add --no-cache --virtual .build-deps build-base \
-        py3-pip libressl-dev libffi-dev gcc musl-dev python3-dev postgresql-dev\
+    && apt-get update && apt-get install -y --no-install-recommends build-essential \
+        libc6 python3-pip libffi-dev musl-dev gcc python3-dev postgresql-server-dev-all\
     && pip3 install --upgrade pip setuptools wheel \
     && pip3 install -r /usr/src/app/requirements.txt \
     && rm -rf /root/.cache/pip
@@ -66,10 +66,7 @@ COPY --from=extracting /app/libredwg/install/usr/local/bin/* /usr/local/bin/
 COPY --from=extracting /app/libredwg/install/usr/local/include/* /usr/local/include/
 COPY --from=extracting /app/libredwg/install/usr/local/lib/* /usr/local/lib/
 COPY --from=extracting /app/libredwg/install/usr/local/share/* /usr/local/share/
-RUN ldconfig /usr/local/bin/
-RUN ldconfig /usr/local/include/
-RUN ldconfig /usr/local/lib/
-RUN ldconfig /usr/local/share/
+RUN ldconfig
 
 # copy project
 COPY . /usr/src/app/

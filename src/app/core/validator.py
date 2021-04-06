@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 from pathlib import Path
 from geojson_pydantic.features import FeatureCollection
 from pydantic import ValidationError
@@ -45,7 +46,7 @@ class Validator:
         if self.file_type == SupportedFormat.CSV:
             raise NotImplementedError("CSV Validator Not implemented")
         if self.file_type == SupportedFormat.DWG:
-            raise NotImplementedError("DWG Validator Not implemented")
+            return self.validate_dwg()
         if self.file_type == SupportedFormat.GEOJSON:
             return self.validate_geojson()
 
@@ -64,6 +65,20 @@ class Validator:
                     return False
         except ValueError as err:
             return False
+
+    def validate_dwg(self):
+        json_tmp = os.path.join("app/uploads", "temp.json")
+        try:
+            return_code = subprocess.call(["dwgread", "-f", self.file_path, "-O", "GeoJSON", "-o", json_tmp])
+            if return_code == 0 and Path(json_tmp).exists():
+                return True
+        except Exception as e:
+            print(e)
+            return
+        finally:
+            if Path(json_tmp).exists():
+                print("ok")
+                # Path(json_tmp).unlink()
 
     def validate_shapefile(self):
         with ZipFile(self.file_path, 'r') as zipObject:

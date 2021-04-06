@@ -6,7 +6,8 @@ from ..db import files as files_repository
 from ..utils.Exceptions import raise_422_exception, raise_401_exception, raise_404_exception
 from ..utils import token
 from ..core.validator import Validator, SupportedFormat
-from ..core.convertors.shapefileConvertor import ShapeFileConvertor
+from ..core.convertors.shapefile import ShapeFileConvertor
+from ..core.convertors.dwg import DwgConvertor
 from fastapi.responses import FileResponse
 from pathlib import Path
 from geojson_pydantic.features import FeatureCollection
@@ -54,7 +55,7 @@ async def download_file(file_uuid: str, access_token: Optional[str] = Header(Non
 
 
 @router.get("/{file_uuid}/format", status_code=status.HTTP_200_OK)
-async def download_file(file_uuid: str, access_token: Optional[str] = Header(None)):
+async def get_allowed_formats(file_uuid: str, access_token: Optional[str] = Header(None)):
     file_record = await file_request_handler(file_uuid, access_token)
     available_format = SupportedFormat.get_available_format(file_record.get("type"))
     urls = [f"/files/{file_uuid}/to{export_format}" for export_format in available_format]
@@ -62,9 +63,14 @@ async def download_file(file_uuid: str, access_token: Optional[str] = Header(Non
 
 
 @router.get("/{file_uuid}/toGEOJSON", response_model=FeatureCollection, status_code=status.HTTP_200_OK)
-async def download_file(file_uuid: str, access_token: Optional[str] = Header(None)):
+async def convert_to_geojson(file_uuid: str, access_token: Optional[str] = Header(None)):
     file_record = await file_request_handler(file_uuid, access_token)
     file_type = file_record.get("type")
     if file_type == SupportedFormat.SHP:
         return FeatureCollection.parse_raw(ShapeFileConvertor(file_record.get("path")).to_geojson())
+    if file_type == SupportedFormat.GEOJSON:
+        with open(file_record.get("path")) as fp:
+            return FeatureCollection.parse_raw(fp.read())
+    if file_type == SupportedFormat.DWG:
+        return FeatureCollection.parse_raw(DwgConvertor(file_record.get("path")).to_geojson())
 
