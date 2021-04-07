@@ -5,6 +5,7 @@ from ..convertors.dwg import DwgConvertor
 
 def convert_to_geojson(file_type, file_path):
     geojson_response = None
+
     if file_type == SupportedFormat.SHP:
         geojson_response = ShapeFileConvertor(file_path).to_geojson()
     if file_type == SupportedFormat.GEOJSON:
