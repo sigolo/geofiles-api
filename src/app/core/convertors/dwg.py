@@ -19,7 +19,9 @@ class DwgConvertor(Convertor):
         json_tmp = os.path.join("app/uploads", "temp.json")
         try:
             return_code = subprocess.call(["dwgread", self.path, "-O", "GeoJSON", "-o", json_tmp])
+            print("DWG after")
             if not return_code == 0 or not Path(json_tmp).exists():
+                print("Return dwgread error")
                 return False
             try:
                 with open(json_tmp, 'r') as fp:

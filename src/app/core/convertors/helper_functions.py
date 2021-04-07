@@ -12,5 +12,6 @@ def convert_to_geojson(file_type, file_path):
         with open(file_path) as fp:
             geojson_response = fp.read()
     if file_type == SupportedFormat.DWG:
+        print("DWG before")
         geojson_response = DwgConvertor(file_path).to_geojson()
     return geojson_response
