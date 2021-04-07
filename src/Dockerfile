@@ -39,7 +39,7 @@ RUN tarxz=`curl --silent 'https://ftp.gnu.org/gnu/libredwg/?C=M;O=D' | grep '.ta
 ############################
 
 # pull official base image
-FROM osgeo/gdal:ubuntu-small-latest
+FROM osgeo/gdal:alpine-normal-latest
 
 # set work directory
 WORKDIR /usr/src/app
@@ -49,24 +49,30 @@ WORKDIR /usr/src/app
 # set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
-
+ENV GLIBC_REPO=https://github.com/sgerrand/alpine-pkg-glibc
+ENV GLIBC_VERSION=2.30-r0
 # copy requirements file
 COPY ./requirements.txt /usr/src/app/requirements.txt
-
-# install dependencies
-RUN set -eux \
-    && apt-get update && apt-get install -y --no-install-recommends build-essential \
-        libc6 python3-pip libffi-dev musl-dev gcc python3-dev postgresql-server-dev-all\
-    && pip3 install --upgrade pip setuptools wheel \
-    && pip3 install -r /usr/src/app/requirements.txt \
-    && rm -rf /root/.cache/pip
-
 # Install libredwg binaries
 COPY --from=extracting /app/libredwg/install/usr/local/bin/* /usr/local/bin/
 COPY --from=extracting /app/libredwg/install/usr/local/include/* /usr/local/include/
 COPY --from=extracting /app/libredwg/install/usr/local/lib/* /usr/local/lib/
 COPY --from=extracting /app/libredwg/install/usr/local/share/* /usr/local/share/
-RUN ldconfig
+# install dependencies
+RUN set -ex && \
+    apk --update add libstdc++ curl ca-certificates && \
+    for pkg in glibc-${GLIBC_VERSION} glibc-bin-${GLIBC_VERSION}; \
+        do curl -sSL ${GLIBC_REPO}/releases/download/${GLIBC_VERSION}/${pkg}.apk -o /tmp/${pkg}.apk; done && \
+    apk add --allow-untrusted /tmp/*.apk && \
+    rm -v /tmp/*.apk && \
+    /usr/glibc-compat/sbin/ldconfig /lib /usr/glibc-compat/lib && \
+    apk add --no-cache --virtual .build-deps build-base \
+        py3-pip libressl-dev libffi-dev gcc musl-dev python3-dev postgresql-dev\
+    && pip3 install --upgrade pip setuptools wheel \
+    && pip3 install -r /usr/src/app/requirements.txt \
+    && rm -rf /root/.cache/pip
+
+
 
 # copy project
 COPY . /usr/src/app/
