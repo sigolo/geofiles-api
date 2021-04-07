@@ -14,7 +14,7 @@ It consumes two very popular open source libraries behind the scenes :
 - [GDAL / ogr2ogr][1]
 - [LibreDWG][2]
 
-It makes use also of FastAPI as the REST framwork (I used it with pydantic models - such as geojson-pydantic)
+It also makes use of [FastAPI][3] as the REST framwork (I used it with pydantic models - such as [geojson-pydantic][4])
 It has a token validation built in. For this validation you can use the users-api and the oauth-api of micro-gis organisation.
 
 #### Installation
@@ -28,3 +28,5 @@ Since this API uploads files and save them (with a path reference on PostgreSQL)
 
 [1]: https://gdal.org/programs/ogr2ogr.html
 [2]: https://github.com/LibreDWG/libredwg
+[3]: https://fastapi.tiangolo.com/
+[4]: https://github.com/developmentseed/geojson-pydantic
