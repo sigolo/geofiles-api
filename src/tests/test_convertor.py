@@ -26,6 +26,7 @@ def test_convert_to_json(test_app: TestClient, monkeypatch, path_to_file, file_f
     path = os.path.join('tests/resources', path_to_file)
     geojson = convert_to_geojson(file_format, path)
     print("files in tests dir: ", os.listdir('tests/resources'))
+    print("file to test : ", path)
     print("file format : ", file_format)
     print("convert output : ", geojson)
     assert bool(geojson) == success
