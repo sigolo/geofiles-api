@@ -19,4 +19,4 @@ jobs:
       - name: build
         run: docker-compose up -d --build
       - name: test
-        run: docker-compose exec -T web pytest
+        run: docker-compose exec -T web pytest . -s
