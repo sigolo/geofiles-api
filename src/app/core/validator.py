@@ -5,6 +5,7 @@ from pathlib import Path
 from geojson_pydantic.features import FeatureCollection
 from pydantic import ValidationError
 from ..utils.Exceptions import raise_422_exception
+from ..utils.command import CALL_ldwg_read_geojson
 from zipfile import ZipFile
 
 
@@ -18,20 +19,20 @@ def validate_file(path, extension):
 
 class SupportedFormat:
     SHP = "SHP"
-    DWG = "DWG"
+    CAD = "CAD"
     GEOJSON = "GEOJSON"
     CSV = "CSV"
 
     @classmethod
     def get_available_format(cls, input_format: str):
-        all_format = [SupportedFormat.SHP, SupportedFormat.DWG, SupportedFormat.GEOJSON, SupportedFormat.CSV]
+        all_format = [SupportedFormat.SHP, SupportedFormat.CAD, SupportedFormat.GEOJSON]
         all_format.remove(input_format)
         all_format.sort()
         return all_format
 
 
 class Validator:
-    SUPPORTED_FORMAT = {".zip": SupportedFormat.SHP, ".dwg": SupportedFormat.DWG, ".json": SupportedFormat.GEOJSON,
+    SUPPORTED_FORMAT = {".zip": SupportedFormat.SHP, ".dxf": SupportedFormat.CAD, ".dwg":SupportedFormat.CAD,".json": SupportedFormat.GEOJSON,
                         ".csv": SupportedFormat.CSV}
 
     SHAPE_FILE_MANDATORY = [".dbf", ".shp", ".shx"]
@@ -45,7 +46,7 @@ class Validator:
             return self.validate_shapefile()
         if self.file_type == SupportedFormat.CSV:
             raise NotImplementedError("CSV Validator Not implemented")
-        if self.file_type == SupportedFormat.DWG:
+        if self.file_type == SupportedFormat.CAD:
             return self.validate_dwg()
         if self.file_type == SupportedFormat.GEOJSON:
             return self.validate_geojson()
@@ -69,16 +70,16 @@ class Validator:
     def validate_dwg(self):
         json_tmp = os.path.join("app/uploads", "temp.json")
         try:
-            return_code = subprocess.call(["dwgread", self.file_path, "-O", "GeoJSON", "-o", json_tmp])
-            if return_code == 0 and Path(json_tmp).exists():
+            command = CALL_ldwg_read_geojson(self.file_path, json_tmp)
+            if command.returncode == 0 and Path(json_tmp).exists():
                 return True
+            return False
         except Exception as e:
             print(e)
             return
         finally:
             if Path(json_tmp).exists():
-                print("ok")
-                # Path(json_tmp).unlink()
+                Path(json_tmp).unlink()
 
     def validate_shapefile(self):
         with ZipFile(self.file_path, 'r') as zipObject:

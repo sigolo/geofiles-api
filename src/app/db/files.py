@@ -11,7 +11,7 @@ import uuid
 import datetime
 from pathlib import Path
 from ..core.validator import Validator, validate_file
-
+from pydantic.types import UUID
 
 def get_expiration_time():
     expiration_time: int = int(os.getenv("FILE_EOL")) if os.getenv("FILE_EOL") else 15
@@ -36,6 +36,7 @@ async def create_from_request(file: UploadFile, file_extension: str, user: Token
         while content := await file.read(1024):
             await out_file.write(content)
     # If file successfully written
+
     if Path(upload_path).exists() and validate_file(upload_path, file_extension):
         # Insert new row
         await insert(file_uuid, Validator.SUPPORTED_FORMAT[file_extension], user["user_id"], upload_path, file.filename)
@@ -51,7 +52,7 @@ async def get_one(file_uuid: str):
     return await database.fetch_one(query=query)
 
 
-async def get_one_by_source_id(source_uuid: str, file_type):
+async def get_one_by_source_id(source_uuid: UUID, file_type):
     await refresh_expired()
     query = UploadTable.select().where(and_(UploadTable.c.source_id == source_uuid, UploadTable.c.type == file_type))
     return await database.fetch_one(query=query)

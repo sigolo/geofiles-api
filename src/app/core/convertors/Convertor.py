@@ -8,7 +8,7 @@ class Convertor(ABC):
         pass
 
     @abstractmethod
-    def to_dwg(self):
+    def to_cad(self):
         pass
 
     @abstractmethod

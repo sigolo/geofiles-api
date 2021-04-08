@@ -12,7 +12,7 @@ Files = Table(
     Column("source_id", UUID, default=None),
     Column("user_id", Integer),
     Column("file_name", String),
-    Column("type", Enum("SHP", "DWG", "CSV", "GEOJSON", create_type=False, name="allowed_format")),
+    Column("type", Enum("SHP", "CAD", "CSV", "GEOJSON", create_type=False, name="allowed_format")),
     Column("path", String(255)),
     Column("eol", DateTime, default=func.now())
 )

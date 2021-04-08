@@ -6,7 +6,8 @@ from ..db import files as files_repository
 from ..utils.Exceptions import raise_422_exception, raise_401_exception, raise_404_exception
 from ..utils import token
 from ..core.validator import Validator, SupportedFormat
-from ..core.convertors.helper_functions import convert_to_geojson as to_geojson
+from ..core.convertors.helper_functions import convert_to_geojson as to_geojson, convert_to_cad as to_cad, \
+    convert_to_shp as to_shp
 from fastapi.responses import FileResponse
 from pathlib import Path
 from geojson_pydantic.features import FeatureCollection
@@ -33,9 +34,9 @@ async def file_request_handler(file_uuid: str, access_token: Optional[str] = Non
         raise_404_exception()
     return FileRecord.parse_obj(dict(file_record))
 
+
 @router.post("/upload/", status_code=status.HTTP_201_CREATED)
 async def create_upload_file(file: UploadFile = File(...), access_token: Optional[str] = Header(None)):
-    print(access_token)
     if not access_token:
         raise_401_exception()
     filename, file_extension = os.path.splitext(file.filename)
@@ -70,3 +71,27 @@ async def convert_to_geojson(file_uuid: str, access_token: Optional[str] = Heade
     if not geojson_response:
         raise_422_exception()
     return FeatureCollection.parse_raw(geojson_response)
+
+
+@router.get("/{file_uuid}/toCAD", status_code=status.HTTP_200_OK)
+async def convert_to_dwg(file_uuid: str, access_token: Optional[str] = Header(None)):
+    file_record = await file_request_handler(file_uuid, access_token)
+    dwg_response = await to_cad(file_record)
+    if not dwg_response:
+        raise_422_exception()
+    file_name = f"{os.path.splitext(file_record.file_name)[0]}.dxf"
+    return FileResponse(
+        dwg_response, media_type='application/dxf', filename=file_name)
+
+
+@router.get("/{file_uuid}/toSHP", status_code=status.HTTP_200_OK)
+async def convert_to_shp(file_uuid: str, access_token: Optional[str] = Header(None)):
+
+    file_record = await file_request_handler(file_uuid, access_token)
+    shp_response = await to_shp(file_record)
+
+    if not shp_response:
+        raise_422_exception()
+    file_name = f"{os.path.splitext(file_record.file_name)[0]}.zip"
+    return FileResponse(
+        shp_response, media_type='application/zip', filename=file_name)
