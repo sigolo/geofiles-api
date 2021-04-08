@@ -9,8 +9,8 @@ services:
       - ./src/:/usr/src/app/
     environment:
       - DATABASE_URL=postgresql://postgres:secret@localhost:5438/uploads
-      - CREDENTIALS_URL=http://localhost:8000/auth/credentials
-      - FILE_EOL=1
+      - CREDENTIALS_URL=http://localhost:8040/auth/credentials
+      - FILE_EOL=10
     network_mode: host
   db:
     image: postgres:12.1-alpine

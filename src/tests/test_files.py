@@ -1,3 +1,5 @@
+import datetime
+
 import pytest
 import os
 from fastapi import status, UploadFile
@@ -43,7 +45,7 @@ def test_upload_file(test_app: TestClient, monkeypatch, path_to_file: str, acces
 
     test_app.headers["access-token"] = access_token
     monkeypatch.setattr(token, "check_user_credentials", mock_check_credentials)
-    monkeypatch.setattr(files_repository, "create", mock_create)
+    monkeypatch.setattr(files_repository, "create_from_request", mock_create)
     response = test_app.post('/files/upload/', files=files_payload)
     assert response.status_code == expected_status_code
 
@@ -52,7 +54,9 @@ def test_upload_file(test_app: TestClient, monkeypatch, path_to_file: str, acces
     "file_uuid, file_record, access_token,token_data, expected_status_code",
     [
         ["some_valid_uuid",
-         {"user_id": 1, "path": os.path.join('tests/resources', JSON_VALID_FILE), "file_name": JSON_VALID_FILE},
+         {"id": uuid.uuid4(), "user_id": 1, "path": os.path.join('tests/resources', JSON_VALID_FILE),
+          "file_name": JSON_VALID_FILE,
+          "type": "GEOJSON", "source_id": None, "eol": datetime.datetime.now()},
          "some-valid-token", {"username": "john", "user_id": 1}, status.HTTP_200_OK],
         ["some_expired_uuid",
          None,
@@ -82,24 +86,29 @@ def test_download_file(test_app: TestClient, monkeypatch, file_uuid, file_record
     "file_uuid, file_record,  expected_download_types, access_token,token_data, expected_status_code",
     [
         ["some_valid_uuid",
-         {"user_id": 1, "path": os.path.join('tests/resources', JSON_VALID_FILE), "file_name": JSON_VALID_FILE,
-          "type": "GEOJSON"}, ['CSV', 'DWG', 'SHP'],
+         {"id": uuid.uuid4(), "user_id": 1, "path": os.path.join('tests/resources', JSON_VALID_FILE),
+          "file_name": JSON_VALID_FILE,
+          "type": "GEOJSON", "source_id": None, "eol": datetime.datetime.now()}, ['CSV', 'DWG', 'SHP'],
          "some-valid-token", {"username": "john", "user_id": 1}, status.HTTP_200_OK],
         ["some_valid_uuid",
-         {"user_id": 1, "path": os.path.join('tests/resources', JSON_VALID_FILE), "file_name": JSON_VALID_FILE,
-          "type": "SHP"}, ['CSV', 'DWG', 'GEOJSON'],
+         {"id": uuid.uuid4(), "user_id": 1, "path": os.path.join('tests/resources', JSON_VALID_FILE),
+          "file_name": JSON_VALID_FILE,
+          "type": "SHP", "source_id": None, "eol": datetime.datetime.now()}, ['CSV', 'DWG', 'GEOJSON'],
          "some-valid-token", {"username": "john", "user_id": 1}, status.HTTP_200_OK],
         ["some_valid_uuid",
-         {"user_id": 1, "path": os.path.join('tests/resources', JSON_VALID_FILE), "file_name": JSON_VALID_FILE,
-          "type": "DWG"}, ['CSV', 'GEOJSON', 'SHP'],
+         {"id": uuid.uuid4(), "user_id": 1, "path": os.path.join('tests/resources', JSON_VALID_FILE),
+          "file_name": JSON_VALID_FILE,
+          "type": "DWG", "source_id": None, "eol": datetime.datetime.now()}, ['CSV', 'GEOJSON', 'SHP'],
          "some-valid-token", {"username": "john", "user_id": 1}, status.HTTP_200_OK],
         ["some_valid_uuid",
-         {"user_id": 1, "path": os.path.join('tests/resources', JSON_VALID_FILE), "file_name": JSON_VALID_FILE,
-          "type": "CSV"}, ['DWG', 'GEOJSON', 'SHP'],
+         {"id": uuid.uuid4(), "user_id": 1, "path": os.path.join('tests/resources', JSON_VALID_FILE),
+          "file_name": JSON_VALID_FILE,
+          "type": "CSV", "source_id": None, "eol": datetime.datetime.now()}, ['DWG', 'GEOJSON', 'SHP'],
          "some-valid-token", {"username": "john", "user_id": 1}, status.HTTP_200_OK],
     ]
 )
-def test_retrieve_download_format(test_app: TestClient, monkeypatch, file_uuid, file_record, expected_download_types, access_token, token_data,
+def test_retrieve_download_format(test_app: TestClient, monkeypatch, file_uuid, file_record, expected_download_types,
+                                  access_token, token_data,
                                   expected_status_code: int):
     async def mock_check_credentials(token_string: str):
         return token_data
@@ -114,5 +123,3 @@ def test_retrieve_download_format(test_app: TestClient, monkeypatch, file_uuid, 
     expected_download_types = [f"/files/{file_uuid}/to{export_format}" for export_format in expected_download_types]
     assert response.status_code == expected_status_code
     assert response.json() == expected_download_types
-
-
