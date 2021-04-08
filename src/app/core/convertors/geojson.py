@@ -32,7 +32,8 @@ class GeoJSONConvertor(Convertor):
 
     def to_cad(self):
         source_dir, dxf_tmp = self.get_output_path(".dxf")
-        return CALL_ogr2_dxf(dxf_tmp, source_dir)
+        CALL_ogr2_dxf(dxf_tmp, self.path)
+        return dxf_tmp
 
     def to_geojson(self):
         return self.path

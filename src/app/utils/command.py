@@ -6,12 +6,13 @@ def CALL_ogr2_geojson(output_json_path, source_path):
 
 
 def CALL_ogr2_dxf(output_dxf_path, source_path):
+    print("SHP output", output_dxf_path)
+    print("source path", source_path)
     return subprocess.run(["ogr2ogr", "-f", "DXF", output_dxf_path, source_path])
 
 
 def CALL_ogr2_shp(output_shp_path, source_path):
-    print("SHP output", output_shp_path)
-    print("source path", source_path)
+
     return subprocess.run(["ogr2ogr", "-f", "ESRI Shapefile", output_shp_path, source_path])
 
 

@@ -39,7 +39,7 @@ async def convert_to_cad(file: FileRecord):
     if file.type == SupportedFormat.SHP:
         dxf_path = ShapeFileConvertor(file.path).to_cad()
     if file.type == SupportedFormat.GEOJSON:
-        dxf_path = file.path
+        dxf_path = GeoJSONConvertor(file.path).to_cad()
     if file.type == SupportedFormat.CAD:
         dxf_path = file.path
     if not dxf_path:
