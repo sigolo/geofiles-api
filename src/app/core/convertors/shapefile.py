@@ -27,7 +27,7 @@ class ShapeFileConvertor(Convertor):
     def to_geojson(self):
         source_dir, file_ext = os.path.splitext(self.path)
         file_name, ext = os.path.splitext(os.path.basename(self.path))
-        json_tmp = os.path.join(source_dir, f"{file_name}.json")
+        json_tmp = os.path.join(os.path.dirname(source_dir), f"{file_name}.json")
         try:
             with ZipFile(self.path, "r") as zip_ref:
                 zip_ref.extractall(source_dir)
@@ -41,6 +41,9 @@ class ShapeFileConvertor(Convertor):
         except Exception as e:
             print(e)
             return
+        finally:
+            if Path(source_dir).is_dir():
+                shutil.rmtree(source_dir)
 
     def to_csv(self):
         pass
