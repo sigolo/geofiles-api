@@ -7,6 +7,9 @@ import subprocess
 class DwgConvertor(Convertor):
 
     def __init__(self, path):
+        if not Path(path).exists():
+            print("path error")
+            raise FileNotFoundError(f"the provided path {self.path} was not found")
         self.path = path
 
     def to_shp(self):
@@ -20,8 +23,12 @@ class DwgConvertor(Convertor):
         try:
             return_code = subprocess.call(["dwgread", self.path, "-O", "GeoJSON", "-o", json_tmp])
             print("DWG after")
-            if not return_code == 0 or not Path(json_tmp).exists():
+            if not return_code == 0 :
                 print("Return dwgread error")
+                return False
+            if not Path(json_tmp).exists():
+                print("Return path error : ", json_tmp)
+                print("list dir : ", os.listdir("app/uploads"))
                 return False
             try:
                 with open(json_tmp, 'r') as fp:

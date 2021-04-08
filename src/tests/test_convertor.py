@@ -6,7 +6,7 @@ from ..app.core.convertors.helper_functions import convert_to_geojson
 from ..app.core.validator import SupportedFormat
 
 VALID_SHP = "valid_shp.zip"
-INVALID_SHP = "invalid_shp.shp"
+INVALID_SHP = "invalid_shp.zip"
 VALID_DWG = "valid.dwg"
 INVALID_DWG = "invalid.dwg"
 
