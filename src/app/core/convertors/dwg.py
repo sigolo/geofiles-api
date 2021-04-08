@@ -19,7 +19,8 @@ class DwgConvertor(Convertor):
         pass
 
     def to_geojson(self):
-        json_tmp = os.path.join("app/uploads", "temp.json")
+        source_dir, file_ext = os.path.splitext(self.path)
+        json_tmp = os.path.join(source_dir, "temp.json")
         try:
             return_code = subprocess.call(["dwgread", self.path, "-O", "GeoJSON", "-o", json_tmp])
             print("DWG after")
