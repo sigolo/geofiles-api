@@ -18,15 +18,11 @@ GEOJSON_INVALID_FILE = "test_invalid.json"
     [
         [VALID_SHP, SupportedFormat.SHP, True],
         [INVALID_SHP, SupportedFormat.SHP, False],
-        [VALID_DWG, SupportedFormat.DWG, True],
+        # [VALID_DWG, SupportedFormat.DWG, True],
         [INVALID_DWG, SupportedFormat.DWG, False],
     ]
 )
 def test_convert_to_json(test_app: TestClient, monkeypatch, path_to_file, file_format, success):
     path = os.path.join('tests/resources', path_to_file)
     geojson = convert_to_geojson(file_format, path)
-    print("files in tests dir: ", os.listdir('tests/resources'))
-    print("file to test : ", path)
-    print("file format : ", file_format)
-    print("convert output : ", geojson)
-    # assert bool(geojson) == success
+    assert bool(geojson) == success

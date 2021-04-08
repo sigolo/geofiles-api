@@ -26,8 +26,8 @@ class ShapeFileConvertor(Convertor):
             for file in os.listdir(source_dir):
                 if file.endswith(".shp"):
                     shape_file_path = os.path.join(source_dir, file)
-                    return_code = subprocess.call(["ogr2ogr", "-f", "GeoJSON", json_tmp, shape_file_path])
-                    if not return_code == 0 or not Path(json_tmp).exists():
+                    return_code = subprocess.run(["ogr2ogr", "-f", "GeoJSON", json_tmp, shape_file_path])
+                    if not return_code.returncode == 0 or not Path(json_tmp).exists():
                         return False
                     try:
                         with open(json_tmp, 'r') as geojson:
