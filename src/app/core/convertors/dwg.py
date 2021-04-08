@@ -22,9 +22,10 @@ class DwgConvertor(Convertor):
         source_dir, file_ext = os.path.splitext(self.path)
         json_tmp = os.path.join(source_dir, "temp.json")
         try:
-            return_code = subprocess.call(["dwgread", self.path, "-O", "GeoJSON", "-o", json_tmp])
+            res = subprocess.run(["dwgread", self.path, "-O", "GeoJSON", "-o", json_tmp], capture_output=True)
             print("DWG after")
-            if not return_code == 0 :
+            if not res.returncode == 0 :
+                print(res.stdout)
                 print("Return dwgread error")
                 return False
             if not Path(json_tmp).exists():
