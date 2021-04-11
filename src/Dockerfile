@@ -39,7 +39,7 @@ RUN tarxz=`curl --silent 'https://ftp.gnu.org/gnu/libredwg/?C=M;O=D' | grep '.ta
 ############################
 
 # pull official base image
-FROM osgeo/gdal:alpine-normal-latest
+FROM osgeo/gdal:alpine-normal-3.2.2
 
 # set work directory
 WORKDIR /usr/src/app

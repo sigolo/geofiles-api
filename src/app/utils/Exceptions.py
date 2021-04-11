@@ -18,6 +18,13 @@ def raise_404_exception(msg: Optional[str] = "Requested resource does not exist 
     )
 
 
+def raise_410_exception(msg: Optional[str] = "Requested resource does not exist or has expired"):
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail=msg,
+    )
+
+
 def raise_422_exception(msg: Optional[str] = "Payload/file format not supported"):
     raise HTTPException(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

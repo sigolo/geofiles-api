@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import APIRouter, status, UploadFile, File, Header
 from ..db import files as files_repository
 
-from ..utils.Exceptions import raise_422_exception, raise_401_exception, raise_404_exception
+from ..utils.Exceptions import raise_422_exception, raise_401_exception, raise_404_exception, raise_410_exception
 from ..utils import token
 from ..core.validator import Validator, SupportedFormat
 from ..core.convertors.helper_functions import convert_to_geojson as to_geojson, convert_to_cad as to_cad, \
@@ -27,11 +27,11 @@ async def file_request_handler(file_uuid: str, access_token: Optional[str] = Non
         raise_401_exception()
     file_record = await files_repository.get_one(file_uuid)
     if not file_record:
-        raise_404_exception()
+        raise_410_exception()
     if file_record.get("user_id") != user["user_id"]:
         raise_401_exception()
     if not Path(file_record.get("path")).exists():
-        raise_404_exception()
+        raise_410_exception()
     return FileRecord.parse_obj(dict(file_record))
 
 
