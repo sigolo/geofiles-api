@@ -60,11 +60,11 @@ def test_upload_file(test_app: TestClient, monkeypatch, path_to_file: str, acces
          "some-valid-token", {"username": "john", "user_id": 1}, status.HTTP_200_OK],
         ["some_expired_uuid",
          None,
-         "some-valid-token", {"username": "john", "user_id": 1}, status.HTTP_404_NOT_FOUND],
+         "some-valid-token", {"username": "john", "user_id": 1}, status.HTTP_410_GONE],
         ["some_valid_uuid",
          {"user_id": 1, "path": os.path.join('tests/resources', JSON_VALID_FILE), "file_name": JSON_VALID_FILE},
          "some-valid-token-from-other-user", {"username": "not_john", "user_id": 2}, status.HTTP_401_UNAUTHORIZED],
-        [None, None, "some-valid-token", {"username": "john", "user_id": 1}, status.HTTP_404_NOT_FOUND],
+        [None, None, "some-valid-token", {"username": "john", "user_id": 1}, status.HTTP_410_GONE],
     ]
 )
 def test_download_file(test_app: TestClient, monkeypatch, file_uuid, file_record, access_token, token_data,
