@@ -11,3 +11,4 @@ geojson-pydantic
 # dev
 pytest
 requests
+loguru
