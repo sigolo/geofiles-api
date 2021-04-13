@@ -12,6 +12,7 @@ import datetime
 from pathlib import Path
 from ..core.validator import Validator, validate_file
 from pydantic.types import UUID
+from ..utils.logs import RestLogger
 
 def get_expiration_time():
     expiration_time: int = int(os.getenv("FILE_EOL")) if os.getenv("FILE_EOL") else 15
@@ -25,6 +26,7 @@ async def insert(file_uuid, file_type, user_id, path, file_name, source_id=None)
                                         file_name=file_name,
                                         source_id=source_id,
                                         eol=get_expiration_time())
+    RestLogger.instance.log_sql_query(sql_query=query)
     return await database.execute(query=query)
 
 

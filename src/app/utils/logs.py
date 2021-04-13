@@ -6,8 +6,9 @@ from loguru import logger
 from enum import Enum
 
 
-class LogType(str,Enum):
-    HTTP = "HTTP"
+class LogType(str, Enum):
+    HTTP_REQUEST = "HTTP_REQUEST"
+    HTTP_RESPONSE = "HTTP_RESPONSE"
     SQL = "SQL"
 
 
@@ -49,12 +50,20 @@ class RestLogger(metaclass=SingletonMeta):
             raise ValueError("request id must be a UUID string")
 
     def log_http_response(self, formatted_process_time, status_code):
-        log = {"request_id": self.request_id, "log_type": LogType.HTTP, "completed_in_ms": formatted_process_time,
+        log = {"request_id": self.request_id, "log_type": LogType.HTTP_RESPONSE,
+               "completed_in_ms": formatted_process_time,
                "status_code": status_code}
         logger.info(json.dumps(log))
 
-    def log_sql_query(self, sql_query, record_num):
-        log = {"request_id": self.request_id, "log_type": LogType.SQL, "query": sql_query}
+    def log_http_request(self, route, method, headers, queryparams=None):
+        log = {"request_id": self.request_id, "log_type": LogType.HTTP_REQUEST, "url": str(route),
+               "headers": str(headers)}
+        if queryparams:
+            log["queryparams"] = str(queryparams)
+        logger.info(json.dumps(log))
+
+    def log_sql_query(self, sql_query, record_num=None):
+        log = {"request_id": self.request_id, "log_type": LogType.SQL, "query": str(sql_query)}
         if record_num:
             log["record_found"] = record_num
         logger.info(json.dumps(log))
