@@ -8,6 +8,7 @@ from .api import monitor, files
 from .db.db_engine import engine, database
 from .db.db_models import metadata
 from .utils.logs import log_http_response, log_http_request, RestLogger
+from .utils.http import HTTPFactory
 
 
 RestLogger.init_logger()
@@ -34,6 +35,7 @@ async def add_request_id_process_time_header(request: Request, call_next):
     request_id = str(uuid.uuid4()) if "X-Request-ID" not in request.headers else request.headers["X-Request-ID"]
     start_time = time.time()
     RestLogger.instance.request_id = request_id
+    HTTPFactory.instance.request_id = request_id
     log_http_request(request.url, request.method, {item[0]: item[1] for item in request.headers.items()},
                             request.path_params)
     response = await call_next(request)
