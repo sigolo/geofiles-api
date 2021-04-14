@@ -2,6 +2,8 @@ import json
 import sys
 import threading
 import uuid
+from typing import Optional
+
 from loguru import logger
 from enum import Enum
 
@@ -49,20 +51,21 @@ class RestLogger(metaclass=SingletonMeta):
         except ValueError:
             raise ValueError("request id must be a UUID string")
 
-    def log_http_response(self, formatted_process_time, status_code):
+    def log_http_response(self, formatted_process_time, status_code, headers):
         log = {"request_id": self.request_id, "log_type": LogType.HTTP_RESPONSE,
                "completed_in_ms": formatted_process_time,
-               "status_code": status_code}
+               "status_code": status_code,
+               "headers": headers}
         logger.info(json.dumps(log))
 
     def log_http_request(self, route, method, headers, queryparams=None):
         log = {"request_id": self.request_id, "log_type": LogType.HTTP_REQUEST, "url": str(route),
-               "headers": str(headers)}
+               "headers": headers}
         if queryparams:
             log["queryparams"] = str(queryparams)
         logger.info(json.dumps(log))
 
-    def log_sql_query(self, sql_query, record_num=None):
+    def log_sql_query(self, sql_query: str, record_num: Optional[int] = None):
         log = {"request_id": self.request_id, "log_type": LogType.SQL, "query": str(sql_query)}
         if record_num:
             log["record_found"] = record_num

@@ -51,18 +51,23 @@ async def create_from_request(file: UploadFile, file_extension: str, user: Token
 async def get_one(file_uuid: str):
     await refresh_expired()
     query = UploadTable.select().where(UploadTable.c.id == file_uuid)
-    return await database.fetch_one(query=query)
+    file_found = await database.fetch_all(query=query)
+    RestLogger.instance.log_sql_query(sql_query=query, record_num=len(file_found))
+    return file_found[0]
 
 
 async def get_one_by_source_id(source_uuid: UUID, file_type):
     await refresh_expired()
     query = UploadTable.select().where(and_(UploadTable.c.source_id == source_uuid, UploadTable.c.type == file_type))
-    return await database.fetch_one(query=query)
+    file_found = await database.fetch_one(query=query)
+    RestLogger.instance.log_sql_query(sql_query=query, record_num=len(file_found))
+    return file_found
 
 
 async def refresh_expired():
     query = UploadTable.select().where(UploadTable.c.eol < datetime.datetime.now())
     expired_files = await database.fetch_all(query=query)
+    RestLogger.instance.log_sql_query(sql_query=query, record_num=len(expired_files))
     for f in expired_files:
         file_path = Path(f.get("path"))
         try:
