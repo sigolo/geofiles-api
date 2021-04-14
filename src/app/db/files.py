@@ -12,7 +12,8 @@ import datetime
 from pathlib import Path
 from ..core.validator import Validator, validate_file
 from pydantic.types import UUID
-from ..utils.logs import RestLogger
+from ..utils.logs import log_sql_query
+
 
 def get_expiration_time():
     expiration_time: int = int(os.getenv("FILE_EOL")) if os.getenv("FILE_EOL") else 15
@@ -26,7 +27,7 @@ async def insert(file_uuid, file_type, user_id, path, file_name, source_id=None)
                                         file_name=file_name,
                                         source_id=source_id,
                                         eol=get_expiration_time())
-    RestLogger.instance.log_sql_query(sql_query=query)
+    log_sql_query(sql_query=query)
     return await database.execute(query=query)
 
 
@@ -52,22 +53,22 @@ async def get_one(file_uuid: str):
     await refresh_expired()
     query = UploadTable.select().where(UploadTable.c.id == file_uuid)
     file_found = await database.fetch_all(query=query)
-    RestLogger.instance.log_sql_query(sql_query=query, record_num=len(file_found))
-    return file_found[0]
+    log_sql_query(sql_query=query, record_num=len(file_found))
+    return file_found[0] if len(file_found) > 0 else None
 
 
 async def get_one_by_source_id(source_uuid: UUID, file_type):
     await refresh_expired()
     query = UploadTable.select().where(and_(UploadTable.c.source_id == source_uuid, UploadTable.c.type == file_type))
     file_found = await database.fetch_all(query=query)
-    RestLogger.instance.log_sql_query(sql_query=query, record_num=len(file_found))
-    return file_found[0]
+    log_sql_query(sql_query=query, record_num=len(file_found))
+    return file_found[0] if len(file_found) > 0 else None
 
 
 async def refresh_expired():
     query = UploadTable.select().where(UploadTable.c.eol < datetime.datetime.now())
     expired_files = await database.fetch_all(query=query)
-    RestLogger.instance.log_sql_query(sql_query=query, record_num=len(expired_files))
+    log_sql_query(sql_query=query, record_num=len(expired_files))
     for f in expired_files:
         file_path = Path(f.get("path"))
         try:
@@ -76,6 +77,19 @@ async def refresh_expired():
             print(e)
         finally:
             await delete(f.get("id"))
+    await garbage_collect_files()
+
+
+async def garbage_collect_files():
+    # make sure to garbage collect all (if some previous expired files were not deleted for some reasons)
+    query = UploadTable.select()
+    all_files = await database.fetch_all(query=query)
+    all_file_paths = [Path(f.get("path")).name for f in all_files]
+    upload_directory = Path("app/uploads")
+    if upload_directory.is_dir():
+        for file in upload_directory.iterdir():
+            if file.name not in all_file_paths:
+                file.unlink()
 
 
 async def delete(file_uid: str):

@@ -5,7 +5,8 @@ from pathlib import Path
 from geojson_pydantic.features import FeatureCollection
 from pydantic import ValidationError
 from ..utils.Exceptions import raise_422_exception
-from ..utils.command import CALL_ldwg_read_geojson
+from ..utils.command import CALL_ldwg_read_geojson, CALL_ogr2_geojson
+from ..utils.logs import log_function
 from zipfile import ZipFile
 
 
@@ -70,8 +71,10 @@ class Validator:
     def validate_dwg(self):
         json_tmp = os.path.join("app/uploads", "temp.json")
         try:
-            command = CALL_ldwg_read_geojson(self.file_path, json_tmp)
+            select_command = CALL_ldwg_read_geojson if self.file_path.suffix == ".dwg" else CALL_ogr2_geojson
+            command = select_command(json_tmp, self.file_path)
             if command.returncode == 0 and Path(json_tmp).exists():
+
                 return True
             return False
         except Exception as e:
