@@ -3,7 +3,9 @@ from ..convertors.Convertor import Convertor
 from zipfile import ZipFile
 from pathlib import Path
 from ...utils.command import CALL_ogr2_dxf, CALL_ogr2_geojson
+from ...utils.logs import log_function, LogLevel
 import shutil
+from inspect import currentframe, getframeinfo
 
 
 class ShapeFileConvertor(Convertor):
@@ -31,14 +33,25 @@ class ShapeFileConvertor(Convertor):
                     shape_file_path = os.path.join(source_dir, file)
                     return_code = helper_function(target_output, shape_file_path)
                     if not return_code.returncode == 0 or not Path(target_output).exists():
+                        log_function(ShapeFileConvertor.__name__,
+                                     ShapeFileConvertor.extract_and_convert.__name__,
+                                     f"file : {self.path} conversion to {target_output} failed",
+                                     getframeinfo(currentframe()).lineno, LogLevel.ERROR)
                         return False
                     return target_output
         except Exception as e:
-            print(e)
-            return
+            log_function(ShapeFileConvertor.__name__,
+                         ShapeFileConvertor.extract_and_convert.__name__,
+                         str(e), getframeinfo(currentframe()).lineno, LogLevel.ERROR)
+            return False
         finally:
             if Path(source_dir).is_dir():
-                shutil.rmtree(source_dir)
+                try:
+                    shutil.rmtree(source_dir)
+                except OSError as e:
+                    log_function(ShapeFileConvertor.__name__,
+                                 ShapeFileConvertor.extract_and_convert.__name__,
+                                 str(e), getframeinfo(currentframe()).lineno, LogLevel.ERROR)
 
     def to_cad(self):
         source_dir, dxf_tmp = self.get_output_path("dxf")
