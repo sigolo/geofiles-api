@@ -59,9 +59,9 @@ async def get_one(file_uuid: str):
 async def get_one_by_source_id(source_uuid: UUID, file_type):
     await refresh_expired()
     query = UploadTable.select().where(and_(UploadTable.c.source_id == source_uuid, UploadTable.c.type == file_type))
-    file_found = await database.fetch_one(query=query)
+    file_found = await database.fetch_all(query=query)
     RestLogger.instance.log_sql_query(sql_query=query, record_num=len(file_found))
-    return file_found
+    return file_found[0]
 
 
 async def refresh_expired():
