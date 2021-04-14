@@ -4,7 +4,7 @@ from fastapi import APIRouter, status, UploadFile, File, Header
 from ..db import files as files_repository
 
 from ..utils.Exceptions import raise_422_exception, raise_401_exception, raise_404_exception, raise_410_exception
-from ..utils import token
+from ..utils.http import HTTPFactory
 from ..core.validator import Validator, SupportedFormat
 from ..core.convertors.helper_functions import convert_to_geojson as to_geojson, convert_to_cad as to_cad, \
     convert_to_shp as to_shp
@@ -22,7 +22,7 @@ router = APIRouter()
 async def file_request_handler(file_uuid: str, access_token: Optional[str] = None):
     if not access_token:
         raise_401_exception()
-    user = await token.check_user_credentials(access_token)
+    user = await HTTPFactory.instance.check_user_credentials(access_token)
     if not user:
         raise_401_exception()
     file_record = await files_repository.get_one(file_uuid)
@@ -42,7 +42,7 @@ async def create_upload_file(file: UploadFile = File(...), access_token: Optiona
     filename, file_extension = os.path.splitext(file.filename)
     if file_extension not in Validator.SUPPORTED_FORMAT:
         raise_422_exception()
-    user = await token.check_user_credentials(access_token)
+    user = await HTTPFactory.instance.check_user_credentials(access_token)
     if not user:
         raise_401_exception()
     file_uuid = await files_repository.create_from_request(file, file_extension, user)
