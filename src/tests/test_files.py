@@ -7,7 +7,8 @@ from starlette.testclient import TestClient
 from pathlib import Path
 
 from ..app.api.schemas import TokenData
-from ..app.utils import http, Exceptions
+from ..app.utils import Exceptions
+from ..app.utils.http import HTTPFactory
 from ..app.core import validator
 from ..app.db import files as files_repository
 
@@ -44,7 +45,7 @@ def test_upload_file(test_app: TestClient, monkeypatch, path_to_file: str, acces
         raise Exceptions.raise_422_exception()
 
     test_app.headers["access-token"] = access_token
-    monkeypatch.setattr(http, "check_user_credentials", mock_check_credentials)
+    monkeypatch.setattr(HTTPFactory.instance, "check_user_credentials", mock_check_credentials)
     monkeypatch.setattr(files_repository, "create_from_request", mock_create)
     response = test_app.post('/files/upload/', files=files_payload)
     assert response.status_code == expected_status_code
@@ -76,7 +77,7 @@ def test_download_file(test_app: TestClient, monkeypatch, file_uuid, file_record
         return file_record
 
     test_app.headers["access-token"] = access_token
-    monkeypatch.setattr(http, "check_user_credentials", mock_check_credentials)
+    monkeypatch.setattr(HTTPFactory.instance, "check_user_credentials", mock_check_credentials)
     monkeypatch.setattr(files_repository, "get_one", mock_get_one)
     response = test_app.get(f"/files/{file_uuid}")
     assert response.status_code == expected_status_code
@@ -112,7 +113,7 @@ def test_retrieve_download_format(test_app: TestClient, monkeypatch, file_uuid, 
         return file_record
 
     test_app.headers["access-token"] = access_token
-    monkeypatch.setattr(http, "check_user_credentials", mock_check_credentials)
+    monkeypatch.setattr(HTTPFactory.instance, "check_user_credentials", mock_check_credentials)
     monkeypatch.setattr(files_repository, "get_one", mock_get_one)
     response = test_app.get(f"/files/{file_uuid}/format")
     expected_download_types = [f"/files/{file_uuid}/to{export_format}" for export_format in expected_download_types]
