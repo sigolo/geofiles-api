@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import APIRouter, status, UploadFile, File, Header
 from ..db import files as files_repository
@@ -12,7 +12,7 @@ from fastapi.responses import FileResponse
 from pathlib import Path
 from geojson_pydantic.features import FeatureCollection
 from pydantic import parse_obj_as
-from .schemas import FileRecord
+from .schemas import FileRecord, PublicFile
 import os
 from dataclasses import asdict
 
@@ -86,7 +86,6 @@ async def convert_to_dwg(file_uuid: str, access_token: Optional[str] = Header(No
 
 @router.get("/{file_uuid}/toSHP", status_code=status.HTTP_200_OK)
 async def convert_to_shp(file_uuid: str, access_token: Optional[str] = Header(None)):
-
     file_record = await file_request_handler(file_uuid, access_token)
     shp_response = await to_shp(file_record)
 
@@ -95,3 +94,14 @@ async def convert_to_shp(file_uuid: str, access_token: Optional[str] = Header(No
     file_name = f"{os.path.splitext(file_record.file_name)[0]}.zip"
     return FileResponse(
         shp_response, media_type='application/zip', filename=file_name)
+
+
+@router.get("/", status_code=status.HTTP_200_OK, response_model=List[PublicFile])
+async def retrieve_users_files(access_token: Optional[str] = Header(None)):
+    if not access_token:
+        raise_401_exception()
+    user = await HTTPFactory.instance.check_user_credentials(access_token)
+    if not user:
+        raise_401_exception()
+    users_files = await files_repository.retrieve_users_files(user["user_id"])
+    return users_files

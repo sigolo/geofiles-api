@@ -19,3 +19,10 @@ class FileRecord(BaseModel):
     type: str
     path: str
     eol: datetime
+
+
+class PublicFile(BaseModel):
+    id: UUID
+    eol: datetime
+    type: str
+    file_name: str

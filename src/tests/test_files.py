@@ -84,7 +84,7 @@ def test_download_file(test_app: TestClient, monkeypatch, file_uuid, file_record
 
 
 @pytest.mark.parametrize(
-    "file_uuid, file_record,  expected_download_types, access_token,token_data, expected_status_code",
+    "file_uuid, file_record, expected_download_types, access_token,token_data, expected_status_code",
     [
         ["some_valid_uuid",
          {"id": uuid.uuid4(), "user_id": 1, "path": os.path.join('tests/resources', JSON_VALID_FILE),
@@ -94,12 +94,12 @@ def test_download_file(test_app: TestClient, monkeypatch, file_uuid, file_record
         ["some_valid_uuid",
          {"id": uuid.uuid4(), "user_id": 1, "path": os.path.join('tests/resources', JSON_VALID_FILE),
           "file_name": JSON_VALID_FILE,
-          "type": "SHP", "source_id": None, "eol": datetime.datetime.now()}, [ 'CAD', 'GEOJSON'],
+          "type": "SHP", "source_id": None, "eol": datetime.datetime.now()}, ['CAD', 'GEOJSON'],
          "some-valid-token", {"username": "john", "user_id": 1}, status.HTTP_200_OK],
         ["some_valid_uuid",
          {"id": uuid.uuid4(), "user_id": 1, "path": os.path.join('tests/resources', JSON_VALID_FILE),
           "file_name": JSON_VALID_FILE,
-          "type": "CAD", "source_id": None, "eol": datetime.datetime.now()}, [ 'GEOJSON', 'SHP'],
+          "type": "CAD", "source_id": None, "eol": datetime.datetime.now()}, ['GEOJSON', 'SHP'],
          "some-valid-token", {"username": "john", "user_id": 1}, status.HTTP_200_OK],
     ]
 )
@@ -119,3 +119,28 @@ def test_retrieve_download_format(test_app: TestClient, monkeypatch, file_uuid, 
     expected_download_types = [f"/files/{file_uuid}/to{export_format}" for export_format in expected_download_types]
     assert response.status_code == expected_status_code
     assert response.json() == expected_download_types
+
+
+@pytest.mark.parametrize(
+    "access_token, token_data, retrieved_files, expected_status_code",
+    [["some_valid_token", {"username": "john", "user_id": 1}, [{
+        "id": "944abf17-c113-4583-bcca-2ac1269b435e",
+        "eol": "2021-04-19T14:01:12.287151",
+        "type": "SHP",
+        "file_name": "valid_shp (3).zip"
+    }], status.HTTP_200_OK],
+     [None, {"username": "john", "user_id": 1}, [], status.HTTP_401_UNAUTHORIZED]]
+)
+def test_retrieve_files(test_app: TestClient, monkeypatch, access_token, token_data, retrieved_files,
+                        expected_status_code):
+    async def mock_check_credentials(token_string: str):
+        return token_data
+
+    async def mock_retrieve_users_files(token: str):
+        return retrieved_files
+
+    test_app.headers["access-token"] = access_token
+    monkeypatch.setattr(HTTPFactory.instance, "check_user_credentials", mock_check_credentials)
+    monkeypatch.setattr(files_repository, "retrieve_users_files", mock_retrieve_users_files)
+    response = test_app.get(f"/files/")
+    assert response.status_code == expected_status_code

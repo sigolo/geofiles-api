@@ -80,6 +80,13 @@ async def refresh_expired():
     await garbage_collect_files()
 
 
+async def retrieve_users_files(user_id: int):
+    query = UploadTable.select().where(UploadTable.c.user_id == user_id)
+    users_files = await database.fetch_all(query=query)
+    log_sql_query(sql_query=query, record_num=len(users_files))
+    return users_files
+
+
 async def garbage_collect_files():
     # make sure to garbage collect all (if some previous expired files were not deleted for some reasons)
     query = UploadTable.select()
