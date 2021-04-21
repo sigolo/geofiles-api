@@ -54,7 +54,7 @@ async def download_file(request: Request, file_uuid: str, token: Optional[str] =
 async def get_allowed_formats(request: Request, file_uuid: str, token: Optional[str] = Header(None)):
     file_record = await file_request_handler(file_uuid, request)
     available_format = SupportedFormat.get_available_format(file_record.type)
-    urls = [f"/files/{file_uuid}/to{export_format}" for export_format in available_format]
+    urls = [f"/{file_uuid}/to{export_format}" for export_format in available_format]
     return urls
 
 
