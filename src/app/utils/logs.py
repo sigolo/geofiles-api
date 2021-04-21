@@ -1,6 +1,5 @@
 import json
 import sys
-import threading
 import uuid
 from typing import Optional
 
@@ -58,20 +57,23 @@ class RestLogger(metaclass=SingletonMeta):
             raise ValueError("request id must be a UUID string")
 
     def log_http_response(self, formatted_process_time, status_code, headers, level: LogLevel = LogLevel.INFO):
+        headers_dict = {item[0]: item[1] for item in headers.items()}
         log = {"request_id": self.request_id,
                "log_type": LogType.HTTP_RESPONSE,
                "log_level": level,
                "completed_in_ms": formatted_process_time,
                "status_code": status_code,
-               "headers": headers}
+               "headers": headers_dict}
         RestLogger.log_it(level, log)
 
     def log_http_request(self, route, method, headers, queryparams=None, level: LogLevel = LogLevel.INFO):
+        headers_dict = {item[0]: item[1] for item in headers.items()}
         log = {"request_id": self.request_id,
                "log_type": LogType.HTTP_REQUEST,
                "log_level": level,
                "url": str(route),
-               "headers": headers}
+               "method": method,
+               "headers": headers_dict}
         if queryparams:
             log["queryparams"] = str(queryparams)
         RestLogger.log_it(level, log)

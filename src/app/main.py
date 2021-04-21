@@ -10,7 +10,6 @@ from .db.db_models import metadata
 from .utils.logs import log_http_response, log_http_request, RestLogger
 from .utils.http import HTTPFactory
 
-
 RestLogger.init_logger()
 metadata.create_all(engine)
 app = FastAPI()
@@ -32,18 +31,19 @@ app.add_middleware(
 
 @app.middleware("http")
 async def add_request_id_process_time_header(request: Request, call_next):
-    request_id = str(uuid.uuid4()) if "X-Request-ID" not in request.headers else request.headers["X-Request-ID"]
+    request_id = HTTPFactory.set_request_id(request)
+    request.state.user, new_token = await HTTPFactory.instance.check_user_credentials(request)
     start_time = time.time()
-    RestLogger.instance.request_id = request_id
-    HTTPFactory.instance.request_id = request_id
-    log_http_request(request.url, request.method, {item[0]: item[1] for item in request.headers.items()},
-                            request.path_params)
+    log_http_request(request.url, request.method, request.headers,
+                     request.path_params)
     response = await call_next(request)
     process_time = (time.time() - start_time) * 1000
     formatted_process_time = '{0:.2f}'.format(process_time)
     response.headers["X-Process-Time"] = str(process_time)
     response.headers["X-Request-ID"] = request_id
-    log_http_response(formatted_process_time, response.status_code,  {item[0]: item[1] for item in response.headers.items()})
+    if new_token:
+        response.headers["access-token"] = new_token
+    log_http_response(formatted_process_time, response.status_code, response.headers)
     return response
 
 
