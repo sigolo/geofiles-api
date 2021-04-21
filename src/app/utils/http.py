@@ -1,14 +1,10 @@
-import os
 import uuid
-
 import httpx
 from fastapi import status, Request
-
 from .singleton import SingletonMeta
 from ..utils.Exceptions import raise_404_exception
 from .logs import RestLogger
-
-CREDENTIALS_URL = os.getenv("CREDENTIALS_URL")
+from .env import REQUEST_ID_KEY, ACCESS_TOKEN_KEY, CREDENTIALS_URL
 
 
 class HTTPFactory(metaclass=SingletonMeta):
@@ -17,7 +13,7 @@ class HTTPFactory(metaclass=SingletonMeta):
 
     @classmethod
     def set_request_id(cls, request: Request):
-        request_id = str(uuid.uuid4()) if "X-Request-ID" not in request.headers else request.headers["X-Request-ID"]
+        request_id = str(uuid.uuid4()) if REQUEST_ID_KEY not in request.headers else request.headers[REQUEST_ID_KEY]
         RestLogger.instance.request_id = request_id
         cls.instance.request_id = request_id
         return request_id
@@ -36,17 +32,15 @@ class HTTPFactory(metaclass=SingletonMeta):
             raise ValueError("request id must be a UUID string")
 
     async def check_user_credentials(self, request: Request):
-        if not request.headers.get("access-token"):
-            print("1")
+        if not request.headers.get(ACCESS_TOKEN_KEY):
             return None, None
-        token = request.headers["access-token"]
+        token = request.headers[ACCESS_TOKEN_KEY]
         async with httpx.AsyncClient() as client:
             try:
-                result = await client.post(url=CREDENTIALS_URL, headers={"access-token": token,
-                                                                         "X-Request-ID": self.request_id})
+                result = await client.post(url=CREDENTIALS_URL, headers={ACCESS_TOKEN_KEY: token,
+                                                                         REQUEST_ID_KEY: self.request_id})
                 if result.status_code == status.HTTP_200_OK:
-                    print("2")
-                    return result.json(), result.headers["access-token"]
+                    return result.json(), result.headers[ACCESS_TOKEN_KEY]
                 return None, None
             except httpx.ConnectError as e:
                 print(e)

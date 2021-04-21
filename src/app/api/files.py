@@ -18,7 +18,7 @@ import os
 router = APIRouter()
 
 
-async def file_request_handler(file_uuid: str, request: Request, access_token: Optional[str] = Header(None)):
+async def file_request_handler(file_uuid: str, request: Request, token: Optional[str] = Header(None)):
     if not request.state.user:
         raise_401_exception()
     file_record = await files_repository.get_one(file_uuid)
@@ -33,7 +33,7 @@ async def file_request_handler(file_uuid: str, request: Request, access_token: O
 
 @router.post("/upload/", status_code=status.HTTP_201_CREATED)
 async def create_upload_file(request: Request, file: UploadFile = File(...),
-                             access_token: Optional[str] = Header(None)):
+                             token: Optional[str] = Header(None)):
     filename, file_extension = os.path.splitext(file.filename)
     if file_extension not in Validator.SUPPORTED_FORMAT:
         raise_422_exception()
@@ -44,14 +44,14 @@ async def create_upload_file(request: Request, file: UploadFile = File(...),
 
 
 @router.get("/{file_uuid}", status_code=status.HTTP_200_OK)
-async def download_file(request: Request, file_uuid: str, access_token: Optional[str] = Header(None)):
+async def download_file(request: Request, file_uuid: str, token: Optional[str] = Header(None)):
     file_record = await file_request_handler(file_uuid, request)
     return FileResponse(
         file_record.path, media_type='application/octet-stream', filename=file_record.file_name)
 
 
 @router.get("/{file_uuid}/format", status_code=status.HTTP_200_OK)
-async def get_allowed_formats(request: Request, file_uuid: str, access_token: Optional[str] = Header(None)):
+async def get_allowed_formats(request: Request, file_uuid: str, token: Optional[str] = Header(None)):
     file_record = await file_request_handler(file_uuid, request)
     available_format = SupportedFormat.get_available_format(file_record.type)
     urls = [f"/files/{file_uuid}/to{export_format}" for export_format in available_format]
@@ -59,7 +59,7 @@ async def get_allowed_formats(request: Request, file_uuid: str, access_token: Op
 
 
 @router.get("/{file_uuid}/toGEOJSON", response_model=FeatureCollection, status_code=status.HTTP_200_OK)
-async def convert_to_geojson(request: Request, file_uuid: str, access_token: Optional[str] = Header(None)):
+async def convert_to_geojson(request: Request, file_uuid: str, token: Optional[str] = Header(None)):
     file_record = await file_request_handler(file_uuid, request)
     geojson_response = await to_geojson(file_record)
     if not geojson_response:
@@ -68,7 +68,7 @@ async def convert_to_geojson(request: Request, file_uuid: str, access_token: Opt
 
 
 @router.get("/{file_uuid}/toCAD", status_code=status.HTTP_200_OK)
-async def convert_to_dwg(request: Request, file_uuid: str, access_token: Optional[str] = Header(None)):
+async def convert_to_dwg(request: Request, file_uuid: str, token: Optional[str] = Header(None)):
     file_record = await file_request_handler(file_uuid, request)
     dwg_response = await to_cad(file_record)
     if not dwg_response:
@@ -79,7 +79,7 @@ async def convert_to_dwg(request: Request, file_uuid: str, access_token: Optiona
 
 
 @router.get("/{file_uuid}/toSHP", status_code=status.HTTP_200_OK)
-async def convert_to_shp(request: Request, file_uuid: str, access_token: Optional[str] = Header(None)):
+async def convert_to_shp(request: Request, file_uuid: str, token: Optional[str] = Header(None)):
     file_record = await file_request_handler(file_uuid, request)
     shp_response = await to_shp(file_record)
 
@@ -91,7 +91,7 @@ async def convert_to_shp(request: Request, file_uuid: str, access_token: Optiona
 
 
 @router.get("/", status_code=status.HTTP_200_OK, response_model=List[PublicFile])
-async def retrieve_users_files(request: Request, access_token: Optional[str] = Header(None)):
+async def retrieve_users_files(request: Request, token: Optional[str] = Header(None)):
     if not request.state.user:
         raise_401_exception()
     users_files = await files_repository.retrieve_users_files(request.state.user["user_id"])

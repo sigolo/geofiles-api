@@ -8,11 +8,12 @@ services:
     volumes:
       - ./src/:/usr/src/app/
     environment:
-      - DATABASE_URL=postgresql://postgres:secret@localhost:5438/uploads
+      - DATABASE_URL=postgresql://postgres:secret@localhost:5439/uploads
       - CREDENTIALS_URL=http://localhost:8040/auth/credentials
       - FILE_EOL=10
-      - ACCESS_TOKEN_KEY=access-token
+      - ACCESS_TOKEN_KEY=token
       - REQUEST_ID_KEY=X-Request-ID
+      - REQUEST_TIME_KEY=X-Process-Time
     network_mode: host
   db:
     image: postgres:12.1-alpine
@@ -24,6 +25,6 @@ services:
       - POSTGRES_DB=uploads
 
     ports:
-      - 5438:5432
+      - 5439:5432
 volumes:
   postgres_data:
