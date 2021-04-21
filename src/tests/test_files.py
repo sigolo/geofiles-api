@@ -11,6 +11,7 @@ from ..app.utils import Exceptions
 from ..app.utils.http import HTTPFactory
 from ..app.core import validator
 from ..app.db import files as files_repository
+from ..app.utils.env import ACCESS_TOKEN_KEY
 
 import uuid
 
@@ -46,7 +47,7 @@ def test_upload_file(test_app: TestClient, monkeypatch, path_to_file: str, acces
             return uuid.uuid4()
         raise Exceptions.raise_422_exception()
 
-    test_app.headers["access-token"] = access_token
+    test_app.headers[ACCESS_TOKEN_KEY] = access_token
     monkeypatch.setattr(HTTPFactory.instance, "check_user_credentials", mock_check_credentials)
     monkeypatch.setattr(files_repository, "create_from_request", mock_create)
     response = test_app.post('/files/upload/', files=files_payload)
@@ -80,7 +81,7 @@ def test_download_file(test_app: TestClient, monkeypatch, file_uuid, file_record
     async def mock_get_one(file_uuid: str):
         return file_record
 
-    test_app.headers["access-token"] = access_token
+    test_app.headers[ACCESS_TOKEN_KEY] = access_token
     monkeypatch.setattr(HTTPFactory.instance, "check_user_credentials", mock_check_credentials)
     monkeypatch.setattr(files_repository, "get_one", mock_get_one)
     response = test_app.get(f"/files/{file_uuid}")
@@ -118,7 +119,7 @@ def test_retrieve_download_format(test_app: TestClient, monkeypatch, file_uuid, 
     async def mock_get_one(file_uuid: str):
         return file_record
 
-    test_app.headers["access-token"] = access_token
+    test_app.headers[ACCESS_TOKEN_KEY] = access_token
     monkeypatch.setattr(HTTPFactory.instance, "check_user_credentials", mock_check_credentials)
     monkeypatch.setattr(files_repository, "get_one", mock_get_one)
     response = test_app.get(f"/files/{file_uuid}/format")
@@ -147,7 +148,7 @@ def test_retrieve_files(test_app: TestClient, monkeypatch, access_token, token_d
     async def mock_retrieve_users_files(token: str):
         return retrieved_files
 
-    test_app.headers["access-token"] = access_token
+    test_app.headers[ACCESS_TOKEN_KEY] = access_token
     monkeypatch.setattr(HTTPFactory.instance, "check_user_credentials", mock_check_credentials)
     monkeypatch.setattr(files_repository, "retrieve_users_files", mock_retrieve_users_files)
     response = test_app.get(f"/files/")
