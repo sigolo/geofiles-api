@@ -37,7 +37,9 @@ def test_upload_file(test_app: TestClient, monkeypatch, path_to_file: str, acces
     files_payload = {'file': path_to_file.open('rb')}
 
     async def mock_check_credentials(token_string: str):
-        return token_data
+        if access_token:
+            return token_data, access_token
+        return None, None
 
     async def mock_create(file: UploadFile, file_extension: str, user: TokenData):
         if validator.validate_file(path_to_file, path_to_file.suffix):
@@ -71,7 +73,9 @@ def test_upload_file(test_app: TestClient, monkeypatch, path_to_file: str, acces
 def test_download_file(test_app: TestClient, monkeypatch, file_uuid, file_record, access_token, token_data,
                        expected_status_code: int):
     async def mock_check_credentials(token_string: str):
-        return token_data
+        if access_token:
+            return token_data, access_token
+        return None, None
 
     async def mock_get_one(file_uuid: str):
         return file_record
@@ -107,7 +111,9 @@ def test_retrieve_download_format(test_app: TestClient, monkeypatch, file_uuid, 
                                   access_token, token_data,
                                   expected_status_code: int):
     async def mock_check_credentials(token_string: str):
-        return token_data
+        if access_token:
+            return token_data, access_token
+        return None, None
 
     async def mock_get_one(file_uuid: str):
         return file_record
@@ -134,7 +140,9 @@ def test_retrieve_download_format(test_app: TestClient, monkeypatch, file_uuid, 
 def test_retrieve_files(test_app: TestClient, monkeypatch, access_token, token_data, retrieved_files,
                         expected_status_code):
     async def mock_check_credentials(token_string: str):
-        return token_data
+        if access_token:
+            return token_data, access_token
+        return None, None
 
     async def mock_retrieve_users_files(token: str):
         return retrieved_files

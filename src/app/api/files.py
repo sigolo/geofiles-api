@@ -1,6 +1,6 @@
 from typing import Optional, List
 
-from fastapi import APIRouter, status, UploadFile, File, Header
+from fastapi import APIRouter, status, UploadFile, File, Header, Request
 from ..db import files as files_repository
 
 from ..utils.Exceptions import raise_422_exception, raise_401_exception, raise_404_exception, raise_410_exception
@@ -11,24 +11,20 @@ from ..core.convertors.helper_functions import convert_to_geojson as to_geojson,
 from fastapi.responses import FileResponse
 from pathlib import Path
 from geojson_pydantic.features import FeatureCollection
-from pydantic import parse_obj_as
+
 from .schemas import FileRecord, PublicFile
 import os
-from dataclasses import asdict
 
 router = APIRouter()
 
 
-async def file_request_handler(file_uuid: str, access_token: Optional[str] = None):
-    if not access_token:
-        raise_401_exception()
-    user = await HTTPFactory.instance.check_user_credentials(access_token)
-    if not user:
+async def file_request_handler(file_uuid: str, request: Request, access_token: Optional[str] = Header(None)):
+    if not request.state.user:
         raise_401_exception()
     file_record = await files_repository.get_one(file_uuid)
     if not file_record:
         raise_410_exception()
-    if file_record.get("user_id") != user["user_id"]:
+    if file_record.get("user_id") != request.state.user["user_id"]:
         raise_401_exception()
     if not Path(file_record.get("path")).exists():
         raise_410_exception()
@@ -36,37 +32,35 @@ async def file_request_handler(file_uuid: str, access_token: Optional[str] = Non
 
 
 @router.post("/upload/", status_code=status.HTTP_201_CREATED)
-async def create_upload_file(file: UploadFile = File(...), access_token: Optional[str] = Header(None)):
-    if not access_token:
-        raise_401_exception()
+async def create_upload_file(request: Request, file: UploadFile = File(...),
+                             access_token: Optional[str] = Header(None)):
     filename, file_extension = os.path.splitext(file.filename)
     if file_extension not in Validator.SUPPORTED_FORMAT:
         raise_422_exception()
-    user = await HTTPFactory.instance.check_user_credentials(access_token)
-    if not user:
+    if not request.state.user:
         raise_401_exception()
-    file_uuid = await files_repository.create_from_request(file, file_extension, user)
+    file_uuid = await files_repository.create_from_request(file, file_extension, request.state.user)
     return file_uuid
 
 
 @router.get("/{file_uuid}", status_code=status.HTTP_200_OK)
-async def download_file(file_uuid: str, access_token: Optional[str] = Header(None)):
-    file_record = await file_request_handler(file_uuid, access_token)
+async def download_file(request: Request, file_uuid: str, access_token: Optional[str] = Header(None)):
+    file_record = await file_request_handler(file_uuid, request)
     return FileResponse(
         file_record.path, media_type='application/octet-stream', filename=file_record.file_name)
 
 
 @router.get("/{file_uuid}/format", status_code=status.HTTP_200_OK)
-async def get_allowed_formats(file_uuid: str, access_token: Optional[str] = Header(None)):
-    file_record = await file_request_handler(file_uuid, access_token)
+async def get_allowed_formats(request: Request, file_uuid: str, access_token: Optional[str] = Header(None)):
+    file_record = await file_request_handler(file_uuid, request)
     available_format = SupportedFormat.get_available_format(file_record.type)
     urls = [f"/files/{file_uuid}/to{export_format}" for export_format in available_format]
     return urls
 
 
 @router.get("/{file_uuid}/toGEOJSON", response_model=FeatureCollection, status_code=status.HTTP_200_OK)
-async def convert_to_geojson(file_uuid: str, access_token: Optional[str] = Header(None)):
-    file_record = await file_request_handler(file_uuid, access_token)
+async def convert_to_geojson(request: Request, file_uuid: str, access_token: Optional[str] = Header(None)):
+    file_record = await file_request_handler(file_uuid, request)
     geojson_response = await to_geojson(file_record)
     if not geojson_response:
         raise_422_exception()
@@ -74,8 +68,8 @@ async def convert_to_geojson(file_uuid: str, access_token: Optional[str] = Heade
 
 
 @router.get("/{file_uuid}/toCAD", status_code=status.HTTP_200_OK)
-async def convert_to_dwg(file_uuid: str, access_token: Optional[str] = Header(None)):
-    file_record = await file_request_handler(file_uuid, access_token)
+async def convert_to_dwg(request: Request, file_uuid: str, access_token: Optional[str] = Header(None)):
+    file_record = await file_request_handler(file_uuid, request)
     dwg_response = await to_cad(file_record)
     if not dwg_response:
         raise_422_exception()
@@ -85,8 +79,8 @@ async def convert_to_dwg(file_uuid: str, access_token: Optional[str] = Header(No
 
 
 @router.get("/{file_uuid}/toSHP", status_code=status.HTTP_200_OK)
-async def convert_to_shp(file_uuid: str, access_token: Optional[str] = Header(None)):
-    file_record = await file_request_handler(file_uuid, access_token)
+async def convert_to_shp(request: Request, file_uuid: str, access_token: Optional[str] = Header(None)):
+    file_record = await file_request_handler(file_uuid, request)
     shp_response = await to_shp(file_record)
 
     if not shp_response:
@@ -97,11 +91,8 @@ async def convert_to_shp(file_uuid: str, access_token: Optional[str] = Header(No
 
 
 @router.get("/", status_code=status.HTTP_200_OK, response_model=List[PublicFile])
-async def retrieve_users_files(access_token: Optional[str] = Header(None)):
-    if not access_token:
+async def retrieve_users_files(request: Request, access_token: Optional[str] = Header(None)):
+    if not request.state.user:
         raise_401_exception()
-    user = await HTTPFactory.instance.check_user_credentials(access_token)
-    if not user:
-        raise_401_exception()
-    users_files = await files_repository.retrieve_users_files(user["user_id"])
+    users_files = await files_repository.retrieve_users_files(request.state.user["user_id"])
     return users_files
