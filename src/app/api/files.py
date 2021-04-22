@@ -47,7 +47,7 @@ async def create_upload_file(request: Request, file: UploadFile = File(...),
 async def download_file(request: Request, file_uuid: str, token: Optional[str] = Header(None)):
     file_record = await file_request_handler(file_uuid, request)
     return FileResponse(
-        file_record.path, media_type='application/octet-stream', filename=file_record.file_name)
+        file_record.path, media_type=SupportedFormat.get_mime_type(file_record.type), filename=file_record.file_name)
 
 
 @router.get("/{file_uuid}/format", status_code=status.HTTP_200_OK)
@@ -61,10 +61,12 @@ async def get_allowed_formats(request: Request, file_uuid: str, token: Optional[
 @router.get("/{file_uuid}/toGEOJSON", response_model=FeatureCollection, status_code=status.HTTP_200_OK)
 async def convert_to_geojson(request: Request, file_uuid: str, token: Optional[str] = Header(None)):
     file_record = await file_request_handler(file_uuid, request)
-    geojson_response = await to_geojson(file_record)
+    geojson_response = await to_geojson(file_record, stream=False)
     if not geojson_response:
         raise_422_exception()
-    return FeatureCollection.parse_raw(geojson_response)
+    file_name = f"{os.path.splitext(file_record.file_name)[0]}.json"
+    return FileResponse(
+        geojson_response, media_type='application/json', filename=file_name)
 
 
 @router.get("/{file_uuid}/toCAD", status_code=status.HTTP_200_OK)
@@ -88,6 +90,15 @@ async def convert_to_shp(request: Request, file_uuid: str, token: Optional[str] 
     file_name = f"{os.path.splitext(file_record.file_name)[0]}.zip"
     return FileResponse(
         shp_response, media_type='application/zip', filename=file_name)
+
+
+@router.get("/{file_uuid}/stream/geojson", response_model=FeatureCollection, status_code=status.HTTP_200_OK)
+async def convert_to_geojson(request: Request, file_uuid: str, token: Optional[str] = Header(None)):
+    file_record = await file_request_handler(file_uuid, request)
+    geojson_response = await to_geojson(file_record, stream=True)
+    if not geojson_response:
+        raise_422_exception()
+    return FeatureCollection.parse_raw(geojson_response)
 
 
 @router.get("/", status_code=status.HTTP_200_OK, response_model=List[PublicFile])

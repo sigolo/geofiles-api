@@ -13,7 +13,7 @@ class TokenData(BaseModel):
 
 class FileRecord(BaseModel):
     id: UUID
-    source_id: Optional[str]
+    source_id: Optional[UUID]
     user_id: int
     file_name: str
     type: str

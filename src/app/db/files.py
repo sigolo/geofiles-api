@@ -82,7 +82,7 @@ async def refresh_expired():
 
 async def retrieve_users_files(user_id: int):
     await refresh_expired()
-    query = UploadTable.select().where(UploadTable.c.user_id == user_id)
+    query = UploadTable.select().where(and_(UploadTable.c.user_id == user_id, UploadTable.c.source_id == None))
     users_files = await database.fetch_all(query=query)
     log_sql_query(sql_query=query, record_num=len(users_files))
     return users_files

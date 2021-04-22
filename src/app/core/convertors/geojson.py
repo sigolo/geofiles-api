@@ -35,6 +35,7 @@ class GeoJSONConvertor(Convertor):
             log_function(GeoJSONConvertor.__name__,
                          GeoJSONConvertor.to_shp.__name__,
                          str(e), getframeinfo(currentframe()).lineno, LogLevel.ERROR)
+        return zip_path
 
     def get_output_path(self, file_output_ext: str):
         source_dir, file_ext = os.path.splitext(self.path)

@@ -1,6 +1,8 @@
 import json
 import os
 import subprocess
+import zipfile
+from collections import defaultdict
 from pathlib import Path
 from geojson_pydantic.features import FeatureCollection
 from pydantic import ValidationError
@@ -23,7 +25,6 @@ class SupportedFormat:
     CAD = "CAD"
     GEOJSON = "GEOJSON"
     CSV = "CSV"
-
     @classmethod
     def get_available_format(cls, input_format: str):
         all_format = [SupportedFormat.SHP, SupportedFormat.CAD, SupportedFormat.GEOJSON]
@@ -31,9 +32,19 @@ class SupportedFormat:
         all_format.sort()
         return all_format
 
+    @classmethod
+    def get_mime_type(cls, input_type: str):
+        mime_type = defaultdict(lambda: "application/octet-stream")
+
+        mime_type[cls.SHP] = "application/zip"
+        mime_type[cls.CAD] = "application/acad"
+        mime_type[cls.GEOJSON] = "application/json"
+        return mime_type[input_type]
+
 
 class Validator:
-    SUPPORTED_FORMAT = {".zip": SupportedFormat.SHP, ".dxf": SupportedFormat.CAD, ".dwg":SupportedFormat.CAD,".json": SupportedFormat.GEOJSON,
+    SUPPORTED_FORMAT = {".zip": SupportedFormat.SHP, ".dxf": SupportedFormat.CAD, ".dwg": SupportedFormat.CAD,
+                        ".json": SupportedFormat.GEOJSON,
                         ".csv": SupportedFormat.CSV}
 
     SHAPE_FILE_MANDATORY = [".dbf", ".shp", ".shx"]
@@ -74,7 +85,6 @@ class Validator:
             select_command = CALL_ldwg_read_geojson if self.file_path.suffix == ".dwg" else CALL_ogr2_geojson
             command = select_command(json_tmp, self.file_path)
             if command.returncode == 0 and Path(json_tmp).exists():
-
                 return True
             return False
         except Exception as e:
@@ -85,14 +95,18 @@ class Validator:
                 Path(json_tmp).unlink()
 
     def validate_shapefile(self):
-        with ZipFile(self.file_path, 'r') as zipObject:
-            list_of_file_names = zipObject.namelist()
-            contained_files = []
-            for file in list_of_file_names:
-                file_name, file_ext = os.path.splitext(file)
-                if file_ext in self.SHAPE_FILE_MANDATORY:
-                    contained_files.append(file_ext)
-            contained_files.sort()
-            if contained_files == self.SHAPE_FILE_MANDATORY:
-                return True
+        try:
+            with ZipFile(self.file_path, 'r') as zipObject:
+                list_of_file_names = zipObject.namelist()
+                contained_files = []
+                for file in list_of_file_names:
+                    file_name, file_ext = os.path.splitext(file)
+                    if file_ext in self.SHAPE_FILE_MANDATORY:
+                        contained_files.append(file_ext)
+                contained_files.sort()
+                if contained_files == self.SHAPE_FILE_MANDATORY:
+                    return True
+                return False
+        except zipfile.BadZipfile as e:
+            log_function(__name__, __name__, f"error during opening Zip file : {e}", 102)
             return False

@@ -8,11 +8,13 @@ from ...api.schemas import FileRecord
 from ...db import files as files_repository
 
 
-async def convert_to_geojson(file: FileRecord):
+async def convert_to_geojson(file: FileRecord, stream: bool = True):
     file_exists = await files_repository.get_one_by_source_id(file.id, SupportedFormat.GEOJSON)
     if file_exists:
-        with open(file_exists.get("path"), 'r') as geojson:
-            return geojson.read()
+        if stream:
+            with open(file_exists.get("path"), 'r') as geojson:
+                return geojson.read()
+        return file_exists.get("path")
     json_path = None
     if file.type == SupportedFormat.SHP:
         json_path = ShapeFileConvertor(file.path).to_geojson()
@@ -24,8 +26,10 @@ async def convert_to_geojson(file: FileRecord):
         if not json_path:
             return False
         await persist_converted_file(file, json_path, "json", SupportedFormat.GEOJSON)
-        with open(json_path, 'r') as geojson:
-            return geojson.read()
+        if stream:
+            with open(json_path, 'r') as geojson:
+                return geojson.read()
+        return json_path
     except FileNotFoundError as e:
         print(e)
         return False
@@ -49,17 +53,13 @@ async def convert_to_cad(file: FileRecord):
 
 
 async def convert_to_shp(file: FileRecord):
-    print("TTTTTT")
     file_exists = await files_repository.get_one_by_source_id(file.id, SupportedFormat.CAD)
     if file_exists:
-        print("QQQ")
         return file_exists.get("path")
     shp_path = None
-    print("inside good")
     if file.type == SupportedFormat.SHP:
         shp_path = file.path
     if file.type == SupportedFormat.GEOJSON:
-
         shp_path = GeoJSONConvertor(file.path).to_shp()
     if file.type == SupportedFormat.CAD:
         shp_path = DwgConvertor(file.path).to_shp()

@@ -5,7 +5,7 @@ from ..convertors.Convertor import Convertor
 import json
 from pathlib import Path
 import subprocess
-from ...utils.command import CALL_ldwg_read_geojson, CALL_ogr2_shp
+from ...utils.command import CALL_ogr2_geojson, CALL_ogr2_shp, CALL_ldwg_read_to_dxf
 from ...utils.zip import make_zip
 
 
@@ -15,9 +15,8 @@ class DwgConvertor(Convertor):
         self.path = path
 
     def to_shp(self):
-        geojson = self.to_geojson()
         source_dir, shp_tmp_folder = self.get_output_path("")
-        CALL_ogr2_shp(shp_tmp_folder, geojson)
+        CALL_ogr2_shp(shp_tmp_folder, self.path)
         if not Path(shp_tmp_folder).is_dir():
             return False
         zip_path = make_zip(source_dir, source_dir + ".zip")
@@ -42,8 +41,12 @@ class DwgConvertor(Convertor):
         file_name, ext = os.path.splitext(os.path.basename(self.path))
         source_dir = os.path.dirname(self.path)
         json_tmp = os.path.join(source_dir, f"{file_name}.json")
+        candidate = self.path
         try:
-            command = CALL_ldwg_read_geojson(self.path, json_tmp)
+            if os.path.splitext(self.path)[1] == ".dwg":
+                candidate = os.path.join(source_dir, f"{file_name}.dxf")
+                CALL_ldwg_read_to_dxf(candidate, self.path)
+            command = CALL_ogr2_geojson(json_tmp, candidate)
             if not command.returncode == 0 or not Path(json_tmp).exists():
                 return False
             try:
