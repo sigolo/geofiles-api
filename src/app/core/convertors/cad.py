@@ -16,7 +16,12 @@ class DwgConvertor(Convertor):
 
     def to_shp(self):
         source_dir, shp_tmp_folder = self.get_output_path("")
-        CALL_ogr2_shp(shp_tmp_folder, self.path)
+        file_name, ext = os.path.splitext(os.path.basename(self.path))
+        candidate = self.path
+        if ext == ".dwg":
+            candidate = os.path.join(source_dir, f"{file_name}.dxf")
+            CALL_ldwg_read_to_dxf(candidate, self.path)
+        CALL_ogr2_shp(shp_tmp_folder, candidate)
         if not Path(shp_tmp_folder).is_dir():
             return False
         zip_path = make_zip(source_dir, source_dir + ".zip")
@@ -43,7 +48,7 @@ class DwgConvertor(Convertor):
         json_tmp = os.path.join(source_dir, f"{file_name}.json")
         candidate = self.path
         try:
-            if os.path.splitext(self.path)[1] == ".dwg":
+            if ext == ".dwg":
                 candidate = os.path.join(source_dir, f"{file_name}.dxf")
                 CALL_ldwg_read_to_dxf(candidate, self.path)
             command = CALL_ogr2_geojson(json_tmp, candidate)
