@@ -19,7 +19,7 @@ class DwgConvertor(Convertor):
         file_name, ext = os.path.splitext(os.path.basename(self.path))
         candidate = self.path
         if ext == ".dwg":
-            candidate = os.path.join(source_dir, f"{file_name}.dxf")
+            candidate = os.path.join("app/uploads", f"{file_name}.dxf")
             CALL_ldwg_read_to_dxf(candidate, self.path)
         CALL_ogr2_shp(shp_tmp_folder, candidate)
         if not Path(shp_tmp_folder).is_dir():
