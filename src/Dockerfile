@@ -76,3 +76,4 @@ RUN set -ex && \
 
 # copy project
 COPY . /usr/src/app/
+RUN mkdir /usr/src/app/uploads
